@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-// --- NEW: Mapbox Imports ---
+// --- Mapbox Imports ---
 import Map, { Marker } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -92,14 +92,23 @@ export default function Home() {
   const [addedItems, setAddedItems] = useState(new Set());
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // --- NEW: Map State ---
+  // --- REVIEWS & PHOTOS STATE ---
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [selectedSubPlace, setSelectedSubPlace] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [newRating, setNewRating] = useState(5);
+  const [newComment, setNewComment] = useState("");
+  const [newPhoto, setNewPhoto] = useState(null);
+  const [submittingReview, setSubmittingReview] = useState(false);
+
+  // --- Map State ---
   const [viewState, setViewState] = useState({
-    longitude: 77.3150, // Default to Kasol longitude
-    latitude: 32.0100,  // Default to Kasol latitude
+    longitude: 77.3150, 
+    latitude: 32.0100,  
     zoom: 13
   });
 
-  // Re-center map when a new place is selected
   useEffect(() => {
     if (selectedPlace?.lat && selectedPlace?.lng) {
       setViewState({
@@ -232,6 +241,53 @@ export default function Home() {
     }
   };
 
+  // --- Review Handlers ---
+  const handleOpenReviews = async (subPlace) => {
+    setSelectedSubPlace(subPlace);
+    setIsReviewModalOpen(true);
+    setReviewsLoading(true);
+    try {
+      const { data } = await axios.get(`${API_URL}/subplaces/${subPlace.id}/reviews`);
+      setReviews(data);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedSubPlace) return;
+
+    setSubmittingReview(true);
+    const formData = new FormData();
+    formData.append("user_id", DUMMY_USER_ID);
+    formData.append("rating", newRating);
+    formData.append("comment", newComment);
+    if (newPhoto) {
+      formData.append("photo", newPhoto);
+    }
+
+    try {
+      const { data: createdReview } = await axios.post(
+        `${API_URL}/subplaces/${selectedSubPlace.id}/reviews`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+
+      setReviews([createdReview, ...reviews]);
+      setNewComment("");
+      setNewPhoto(null);
+      setNewRating(5);
+    } catch (error) {
+      console.error("Error posting review:", error);
+      alert("Failed to submit review.");
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
   const step = selectedPlace ? 4 : selectedDistrict ? 3 : selectedState ? 2 : 1;
   const scrollToJourney = () => document.getElementById("journey")?.scrollIntoView({ behavior: "smooth" });
 
@@ -352,7 +408,7 @@ export default function Home() {
           </section>
         )}
 
-        {/* --- NEW: MAP & EXPLORATION HUB SPLIT LAYOUT --- */}
+        {/* --- MAP & EXPLORATION HUB SPLIT LAYOUT --- */}
         {selectedPlace && (
           <section className="explore-panel reveal">
             <div className="panel-heading">
@@ -383,8 +439,15 @@ export default function Home() {
                             <span className="text-xs bg-white/10 text-white/70 px-2 py-1 rounded">{item.distance_km} km</span>
                           </div>
                           <p className="text-white/60 text-sm mb-4 line-clamp-2">{item.description}</p>
-                          <div className="flex justify-between items-center pt-3 border-t border-white/10 mt-auto">
-                            <span className="text-amber-400 text-sm">{item.cheap_vibe_score ? "★".repeat(item.cheap_vibe_score) : ""}</span>
+                          
+                          <div className="flex items-center justify-between pt-3 border-t border-white/10 mt-auto">
+                            <button 
+                              onClick={() => handleOpenReviews(item)}
+                              className="text-xs font-bold px-3 py-1.5 rounded bg-white/5 text-white/80 hover:bg-white/10 transition flex items-center gap-1"
+                            >
+                              💬 Reviews
+                            </button>
+                            
                             <button 
                               onClick={() => handleAddToTrip(item)}
                               disabled={isAdded}
@@ -414,20 +477,17 @@ export default function Home() {
                       mapStyle="mapbox://styles/mapbox/dark-v11"
                       mapboxAccessToken={MAPBOX_TOKEN}
                     >
-                      {/* Primary Place Marker (e.g., Kasol center) */}
                       <Marker longitude={Number(selectedPlace.lng)} latitude={Number(selectedPlace.lat)}>
                         <div className="bg-rose-500 text-white p-2 rounded-full shadow-lg border-2 border-white animate-bounce cursor-pointer flex items-center gap-2">
                            <span className="font-bold text-xs uppercase px-1">{selectedPlace.name}</span>
                         </div>
                       </Marker>
 
-                      {/* Subplaces Markers */}
                       {subplaces[activeTab]?.map((item) => (
                         item.lat && item.lng && (
                           <Marker key={item.id} longitude={Number(item.lng)} latitude={Number(item.lat)}>
                             <div className="bg-slate-800 text-white w-8 h-8 rounded-full shadow-lg border-2 border-indigo-500 flex items-center justify-center cursor-pointer hover:scale-125 transition-transform hover:z-50 group">
                               <span className="text-sm">{categories.find(c => c.key === activeTab)?.icon || '📍'}</span>
-                              {/* Hover Tooltip */}
                               <div className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-white text-slate-900 text-xs font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none shadow-xl">
                                 {item.name}
                               </div>
@@ -501,6 +561,112 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* --- REVIEWS & PHOTO UPLOAD MODAL --- */}
+      {isReviewModalOpen && selectedSubPlace && (
+        <div className="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 backdrop-blur-md">
+          <div className="bg-[#121212] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl text-white">
+            
+            <div className="p-6 border-b border-white/10 flex justify-between items-center bg-[#181818]">
+              <div>
+                <span className="text-xs uppercase tracking-wider text-indigo-400 font-bold">Traveler Community</span>
+                <h3 className="text-xl font-black mt-1">{selectedSubPlace.name}</h3>
+              </div>
+              <button 
+                onClick={() => setIsReviewModalOpen(false)} 
+                className="text-white/40 hover:text-white bg-white/5 rounded-full w-8 h-8 flex items-center justify-center border border-white/10 font-bold transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1 space-y-6">
+              
+              <form onSubmit={handleReviewSubmit} className="bg-white/5 p-5 rounded-xl border border-white/10 space-y-4">
+                <h4 className="font-bold text-sm text-indigo-300">Leave your review & photos</h4>
+                
+                <div className="flex gap-4 items-center">
+                  <label className="text-xs text-white/60">Rating:</label>
+                  <select 
+                    value={newRating} 
+                    onChange={(e) => setNewRating(e.target.value)}
+                    className="bg-black border border-white/20 rounded px-3 py-1 text-sm text-white"
+                  >
+                    <option value="5">★★★★★ (5/5)</option>
+                    <option value="4">★★★★☆ (4/5)</option>
+                    <option value="3">★★★☆☆ (3/5)</option>
+                    <option value="2">★★☆☆☆ (2/5)</option>
+                    <option value="1">★☆☆☆☆ (1/5)</option>
+                  </select>
+                </div>
+
+                <textarea 
+                  rows="2"
+                  placeholder="Share tips about the trail, crowd, or food..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-indigo-500"
+                  required
+                />
+
+                <div className="flex justify-between items-center pt-2">
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    onChange={(e) => setNewPhoto(e.target.files[0])}
+                    className="text-xs text-white/50 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer"
+                  />
+                  <button 
+                    type="submit" 
+                    disabled={submittingReview}
+                    className="bg-indigo-600 hover:bg-indigo-500 px-5 py-2 rounded-lg text-sm font-bold transition disabled:opacity-50"
+                  >
+                    {submittingReview ? "Posting..." : "Post Review"}
+                  </button>
+                </div>
+              </form>
+
+              <div className="space-y-4">
+                <h4 className="font-bold text-sm text-white/60">Traveler Reviews ({reviews.length})</h4>
+                
+                {reviewsLoading ? (
+                  <div className="text-center py-8 text-white/40">Loading reviews...</div>
+                ) : reviews.length === 0 ? (
+                  <div className="text-center py-8 text-white/40 bg-white/5 rounded-xl border border-white/5">No reviews yet. Be the first traveler to share your experience!</div>
+                ) : (
+                  reviews.map((rev) => (
+                    <div key={rev.id} className="bg-white/5 p-4 rounded-xl border border-white/10 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-sm text-indigo-300">{rev.user_name || "Wanderer"}</span>
+                        <span className="text-amber-400 text-xs">{"★".repeat(rev.rating)}</span>
+                      </div>
+                      <p className="text-sm text-white/80">{rev.comment}</p>
+                      {rev.photo_url && (
+                        <div className="mt-3">
+                          <img src={rev.photo_url} alt="Traveler upload" className="rounded-lg max-h-48 object-cover border border-white/10" />
+                        </div>
+                      )}
+                      <span className="text-[10px] text-white/30 block pt-1">{new Date(rev.created_at).toLocaleDateString()}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+
+            </div>
+
+            <div className="p-4 border-t border-white/10 bg-[#181818] flex justify-end">
+              <button 
+                className="bg-white/10 hover:bg-white/20 text-white px-5 py-2 rounded-xl font-bold text-sm transition" 
+                onClick={() => setIsReviewModalOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
       <footer className="footer"><span>WANDERWISE</span><span>Take the scenic route.</span></footer>
     </main>
   );
