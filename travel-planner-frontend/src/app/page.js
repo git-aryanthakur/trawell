@@ -296,11 +296,11 @@ export default function Home() {
       <header className="topbar">
         <div className="brand"><span className="brand-mark">✦</span><span>Wanderwise</span></div>
         <div className="flex gap-4 items-center">
-            <div className="topbar-note"><span className="live-dot" /> Curated for the curious</div>
+            <div className="topbar-note"><span className="live-dot" /> For the beautifully lost</div>
             {activeTrip && (
                 <button 
                   onClick={() => setIsModalOpen(true)}
-                  className="text-sm font-bold border border-white/40 rounded-full px-4 py-1.5 hover:bg-white/10 transition shadow-sm text-white bg-black/20 backdrop-blur-md"
+                  className="trip-button text-sm font-bold border border-white/40 rounded-full px-4 py-1.5 hover:bg-white/10 transition shadow-sm text-white bg-black/20 backdrop-blur-md"
                 >
                     View Trip ({addedItems.size})
                 </button>
@@ -330,10 +330,10 @@ export default function Home() {
         <div className="hero-orb hero-orb-two" />
         <div className="hero-route" aria-hidden="true"><span /><span /><span /></div>
         <div className="hero-content">
-          <div className="hero-kicker"><span className="pulse-ring" /> Your next story starts here</div>
-          <h1>Go where the map<br /><em>gets interesting.</em></h1>
-          <p className="hero-copy">A thoughtful guide to India&apos;s lesser-known places, local flavors, and views worth taking the long way for.</p>
-          <button className="hero-cta" onClick={scrollToJourney}>Start exploring <span>↗</span></button>
+          <div className="hero-kicker"><span className="pulse-ring" /> A field guide for curious souls</div>
+          <h1>Somewhere<br /><em>beautiful is waiting.</em></h1>
+          <p className="hero-copy">“The best journeys answer questions you never thought to ask.” Let the road lead you through Himachal&apos;s quiet valleys, warm kitchens, and wild views.</p>
+          <button className="hero-cta" onClick={scrollToJourney}>Find my somewhere <span>↗</span></button>
           <div className="hero-stats">
             <span><strong>01</strong> Choose a region</span>
             <span><strong>02</strong> Follow your curiosity</span>
@@ -347,19 +347,25 @@ export default function Home() {
       <div className="content-wrap" id="journey">
         <div className="journey-head">
           <div>
-            <p className="eyebrow">Build your escape</p>
-            <h2>Find your kind of <em>somewhere.</em></h2>
+            <p className="eyebrow">The Wanderwise method</p>
+            <h2>Follow the feeling. <em>Find the view.</em></h2>
           </div>
           <div className="progress-wrap">
-            <div className="progress-label"><span>YOUR JOURNEY</span><strong>{step} / 4</strong></div>
+            <div className="progress-label"><span>YOUR TRAIL</span><strong>{step} / 4</strong></div>
             <div className="progress-track"><span style={{ width: `${step * 25}%` }} /></div>
           </div>
         </div>
 
+        <section className="quote-strip">
+          <span className="quote-mark">“</span>
+          <p>Take the road that disappears into the mountains. That is usually where the story begins.</p>
+          <span className="quote-credit">WANDERWISE FIELD NOTE · 01</span>
+        </section>
+
         <section className="discovery-section">
-          <div className="section-heading">
+            <div className="section-heading">
             <div className="step-number">01</div>
-            <div><p className="eyebrow">Start with a feeling</p><h3>Pick a state to explore</h3></div>
+              <div><p className="eyebrow">Choose your first horizon</p><h3>Where does your curiosity point?</h3></div>
             {selectedState && <span className="selected-pill">✓ {selectedState.name}</span>}
           </div>
           {statesLoading ? <div className="loading-row"><Spinner /> Loading destinations...</div> : (
@@ -383,7 +389,7 @@ export default function Home() {
               <div className="step-number">02</div>
               <div><p className="eyebrow">Narrow it down</p><h3>Around {selectedState.name}</h3></div>
             </div>
-            {districtsLoading ? <div className="loading-row"><Spinner /> Finding the good stuff...</div> : (
+            {districtsLoading ? <div className="loading-row"><Spinner /> Reading the landscape...</div> : (
               <div className="district-grid">
                 {districts.map((district) => (
                   <button key={district.id} onClick={() => handleDistrictClick(district)} className={`district-card ${selectedDistrict?.id === district.id ? "is-selected" : ""}`} style={{ backgroundImage: `url(${entityImage(20, district)})` }}>
@@ -399,10 +405,10 @@ export default function Home() {
           <section className="discovery-section reveal">
             <div className="section-heading">
               <div className="step-number">03</div>
-              <div><p className="eyebrow">Make it yours</p><h3>Places in {selectedDistrict.name}</h3></div>
+              <div><p className="eyebrow">Make the day yours</p><h3>Small wonders around {selectedDistrict.name}</h3></div>
             </div>
-            {placesLoading ? <div className="loading-row"><Spinner /> Uncovering destinations...</div> : places.length === 0 ? (
-              <div className="empty-state">No places found here yet. Try another district.</div>
+            {placesLoading ? <div className="loading-row"><Spinner /> Uncovering the good stuff...</div> : places.length === 0 ? (
+              <div className="empty-state">This trail is still being written. Try another district.</div>
             ) : (
               <div className="place-grid">
                 {places.map((place, index) => (
@@ -422,14 +428,14 @@ export default function Home() {
         {selectedPlace && (
           <section className="explore-panel reveal">
             <div className="panel-heading">
-              <div><p className="eyebrow eyebrow-light">Your personal shortlist</p><h2>Worth the detour<span>.</span></h2><p>Little places that make {selectedPlace.name} memorable.</p></div>
+              <div><p className="eyebrow eyebrow-light">Your personal shortlist</p><h2>Worth the detour<span>.</span></h2><p>Little places, long memories, and the best reasons to linger in {selectedPlace.name}.</p></div>
               <div className="panel-badge">✦<span>EDITOR&apos;S<br />PICK</span></div>
             </div>
             
-            {subplacesLoading ? <div className="loading-row loading-row-light"><Spinner light /> Curating your shortlist...</div> : !subplaces || Object.keys(subplaces).length === 0 ? (
-              <div className="empty-state empty-state-dark">No hidden gems recorded for this location yet.</div>
+            {subplacesLoading ? <div className="loading-row loading-row-light"><Spinner light /> Collecting local whispers...</div> : !subplaces || Object.keys(subplaces).length === 0 ? (
+              <div className="empty-state empty-state-dark">No field notes here yet. Be the first to leave one.</div>
             ) : (
-              <div className="flex flex-col lg:flex-row gap-8 items-start mt-8">
+              <div className="explore-layout flex flex-col lg:flex-row gap-8 items-start mt-8">
                 
                 {/* Left Side: Places List */}
                 <div className="w-full lg:w-3/5 flex-shrink-0">
@@ -438,7 +444,7 @@ export default function Home() {
                       <button key={key} onClick={() => setActiveTab(key)} className={activeTab === key ? "active" : ""}>{icon} {label} <small>{subplaces[key].length}</small></button>
                     ))}
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                  <div className="subplace-grid grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                     {subplaces[activeTab]?.map((item, index) => {
                       const isAdded = addedItems.has(item.id);
                       return (
@@ -455,7 +461,7 @@ export default function Home() {
                               onClick={() => handleOpenReviews(item)}
                               className="text-xs font-bold px-3 py-1.5 rounded bg-white/5 text-white/80 hover:bg-white/10 transition flex items-center gap-1"
                             >
-                              💬 Reviews
+                              ✦ Traveler notes
                             </button>
                             
                             <button 
@@ -463,7 +469,7 @@ export default function Home() {
                               disabled={isAdded}
                               className={`text-sm font-bold px-3 py-1.5 rounded transition ${isAdded ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}
                             >
-                              {isAdded ? "✓ Added" : "+ Add"}
+                              {isAdded ? "✓ In my trail" : "+ Save stop"}
                             </button>
                           </div>
                         </article>
@@ -473,7 +479,7 @@ export default function Home() {
                 </div>
 
                 {/* Right Side: Mapbox Map */}
-                <div className="w-full lg:w-2/5 h-[600px] rounded-3xl overflow-hidden shadow-2xl border-4 border-white/5 sticky top-8 bg-slate-900 relative">
+                <div className="map-frame w-full lg:w-2/5 h-[600px] rounded-3xl overflow-hidden shadow-2xl border-4 border-white/5 sticky top-8 bg-slate-900 relative">
                   {!selectedPlace.lat ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-white/50 p-6 text-center">
                       <span className="text-4xl mb-3">🗺️</span>
@@ -517,8 +523,8 @@ export default function Home() {
 
       {/* --- TRIP DASHBOARD MODAL --- */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
-          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+        <div className="trip-modal fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+          <div className="trip-dialog bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <div>
                 <h2 className="text-2xl font-black text-slate-800">{activeTrip?.title || "My Trip"}</h2>
@@ -533,7 +539,7 @@ export default function Home() {
             </div>
             <div className="p-6 overflow-y-auto flex-1 bg-slate-50/50">
               {(!activeTrip?.itinerary_items || activeTrip.itinerary_items.length === 0) ? (
-                 <div className="text-center py-12 text-slate-500">No stops added yet. Start exploring!</div>
+                    <div className="text-center py-12 text-slate-500">Your trail is quiet for now. Save a place worth waking up for.</div>
               ) : (
                 <div className="space-y-4">
                   {activeTrip.itinerary_items.map((stop, i) => (
@@ -565,7 +571,7 @@ export default function Home() {
                   className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-800 transition shadow-md" 
                   onClick={() => setIsModalOpen(false)}
                 >
-                  Back to Map
+                  Keep wandering
                 </button>
             </div>
           </div>
@@ -574,12 +580,12 @@ export default function Home() {
 
       {/* --- REVIEWS & PHOTO UPLOAD MODAL --- */}
       {isReviewModalOpen && selectedSubPlace && (
-        <div className="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 backdrop-blur-md">
-          <div className="bg-[#121212] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl text-white">
+        <div className="review-modal fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 backdrop-blur-md">
+          <div className="review-dialog bg-[#121212] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl text-white">
             
             <div className="p-6 border-b border-white/10 flex justify-between items-center bg-[#181818]">
               <div>
-                <span className="text-xs uppercase tracking-wider text-indigo-400 font-bold">Traveler Community</span>
+                <span className="text-xs uppercase tracking-wider text-indigo-400 font-bold">Field notes from fellow wanderers</span>
                 <h3 className="text-xl font-black mt-1">{selectedSubPlace.name}</h3>
               </div>
               <button 
@@ -593,7 +599,7 @@ export default function Home() {
             <div className="p-6 overflow-y-auto flex-1 space-y-6">
               
               <form onSubmit={handleReviewSubmit} className="bg-white/5 p-5 rounded-xl border border-white/10 space-y-4">
-                <h4 className="font-bold text-sm text-indigo-300">Leave your review & photos</h4>
+                <h4 className="font-bold text-sm text-indigo-300">Leave a note for the next curious traveler</h4>
                 
                 <div className="flex gap-4 items-center">
                   <label className="text-xs text-white/60">Rating:</label>
@@ -637,12 +643,12 @@ export default function Home() {
               </form>
 
               <div className="space-y-4">
-                <h4 className="font-bold text-sm text-white/60">Traveler Reviews ({reviews.length})</h4>
+                  <h4 className="font-bold text-sm text-white/60">Notes from the trail ({reviews.length})</h4>
                 
                 {reviewsLoading ? (
                   <div className="text-center py-8 text-white/40">Loading reviews...</div>
                 ) : reviews.length === 0 ? (
-                  <div className="text-center py-8 text-white/40 bg-white/5 rounded-xl border border-white/5">No reviews yet. Be the first traveler to share your experience!</div>
+                  <div className="text-center py-8 text-white/40 bg-white/5 rounded-xl border border-white/5">No notes yet. Leave the first little piece of wisdom.</div>
                 ) : (
                   reviews.map((rev) => (
                     <div key={rev.id} className="bg-white/5 p-4 rounded-xl border border-white/10 space-y-2">
@@ -677,7 +683,7 @@ export default function Home() {
         </div>
       )}
 
-      <footer className="footer"><span>WANDERWISE</span><span>Take the scenic route.</span></footer>
+      <footer className="footer"><span>WANDERWISE · HIMACHAL & BEYOND</span><span>Go gently. Look closely.</span></footer>
     </main>
   );
 }
