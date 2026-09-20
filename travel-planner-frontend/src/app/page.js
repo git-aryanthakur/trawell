@@ -40,10 +40,53 @@ const locationImages = {
   "kerala": "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=1200&q=90",
 };
 
+const himachalDistrictImages = {
+  "bilaspur": "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1200&q=90",
+  "chamba": "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1200&q=90",
+  "hamirpur": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=90",
+  "kangra": "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1200&q=90",
+  "kinnaur": "https://images.unsplash.com/photo-1470214304380-aadaedcfff1b?auto=format&fit=crop&w=1200&q=90",
+  "kullu": "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=90",
+  "lahaul and spiti": "https://images.unsplash.com/photo-1518002054494-3a6f94352e9d?auto=format&fit=crop&w=1200&q=90",
+  "mandi": "https://images.unsplash.com/photo-1477587458883-47145ed94245?auto=format&fit=crop&w=1200&q=90",
+  "shimla": "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1200&q=90",
+  "sirmaur": "https://images.unsplash.com/photo-1470214304380-aadaedcfff1b?auto=format&fit=crop&w=1200&q=90",
+  "solan": "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1200&q=90",
+  "una": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=90",
+};
+
+const uttarakhandDistrictImages = {
+  "almora": "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1200&q=90",
+  "bageshwar": "https://images.unsplash.com/photo-1464278533981-50106e6176b1?auto=format&fit=crop&w=1200&q=90",
+  "chamoli": "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=90",
+  "champawat": "https://images.unsplash.com/photo-1470214304380-aadaedcfff1b?auto=format&fit=crop&w=1200&q=90",
+  "dehradun": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=90",
+  "haridwar": "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=1200&q=90",
+  "nainital": "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1200&q=90",
+  "pauri garhwal": "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=90",
+  "pithoragarh": "https://images.unsplash.com/photo-1518002054494-3a6f94352e9d?auto=format&fit=crop&w=1200&q=90",
+  "rudraprayag": "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1200&q=90",
+  "tehri garhwal": "https://images.unsplash.com/photo-1477587458883-47145ed94245?auto=format&fit=crop&w=1200&q=90",
+  "udham singh nagar": "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=1200&q=90",
+  "uttarkashi": "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1200&q=90",
+};
+
+const cafeAndTrailImages = [
+  "https://images.unsplash.com/photo-1445116572660-236099ec97a0?auto=format&fit=crop&w=1200&q=90",
+  "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1200&q=90",
+  "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=90",
+  "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=90",
+  "https://images.unsplash.com/photo-1464278533981-50106e6176b1?auto=format&fit=crop&w=1200&q=90",
+];
+
 function imageFor(index = 0, label = "") {
   const text = label.toLowerCase();
   const exactMatch = Object.entries(locationImages).find(([name]) => text.includes(name));
   if (exactMatch) return exactMatch[1];
+  const districtMatch = Object.entries(himachalDistrictImages).find(([name]) => text.includes(name));
+  if (districtMatch) return districtMatch[1];
+  const uttarakhandMatch = Object.entries(uttarakhandDistrictImages).find(([name]) => text.includes(name));
+  if (uttarakhandMatch) return uttarakhandMatch[1];
   if (text.includes("mountain") || text.includes("himachal") || text.includes("ladakh") || text.includes("sikkim")) return travelImages[0];
   if (text.includes("beach") || text.includes("coast") || text.includes("goa") || text.includes("kerala")) return travelImages[2];
   if (text.includes("fort") || text.includes("palace") || text.includes("rajasthan")) return travelImages[1];
@@ -51,20 +94,21 @@ function imageFor(index = 0, label = "") {
   return travelImages[index % travelImages.length];
 }
 
-function imageForPlace(index, place) {
+function imageForPlace(index, place, context = "") {
   const apiImage = place?.image_url || place?.photo_url || place?.image || place?.photo || place?.thumbnail || place?.cover_image;
   if (apiImage) return apiImage;
-  const label = `${place?.name || ""} ${place?.description || ""}`;
+  const label = `${place?.name || ""} ${place?.description || ""} ${context}`;
   const knownImage = imageFor(index, label);
-  const hasKnownImage = Object.keys(locationImages).some((name) => label.toLowerCase().includes(name));
+  const hasKnownImage = Object.keys(locationImages).some((name) => label.toLowerCase().includes(name))
+    || Object.keys(himachalDistrictImages).some((name) => label.toLowerCase().includes(name))
+    || Object.keys(uttarakhandDistrictImages).some((name) => label.toLowerCase().includes(name));
   if (hasKnownImage) return knownImage;
-  const query = encodeURIComponent(`${place?.name || "India travel"} India travel`);
-  return `https://loremflickr.com/1200/800/${query}?lock=${Math.abs(Number(place?.id) || index + 1)}`;
+  return cafeAndTrailImages[Math.abs(Number(place?.id) || index) % cafeAndTrailImages.length];
 }
 
-function entityImage(index, entity) {
+function entityImage(index, entity, context = "") {
   const apiImage = entity?.image_url || entity?.photo_url || entity?.image || entity?.photo || entity?.thumbnail || entity?.cover_image;
-  return apiImage || imageForPlace(index, entity);
+  return apiImage || imageForPlace(index, entity, context);
 }
 
 function Spinner({ light = false }) {
@@ -392,7 +436,7 @@ export default function Home() {
             {districtsLoading ? <div className="loading-row"><Spinner /> Reading the landscape...</div> : (
               <div className="district-grid">
                 {districts.map((district) => (
-                  <button key={district.id} onClick={() => handleDistrictClick(district)} className={`district-card ${selectedDistrict?.id === district.id ? "is-selected" : ""}`} style={{ backgroundImage: `url(${entityImage(20, district)})` }}>
+                  <button key={district.id} onClick={() => handleDistrictClick(district)} className={`district-card ${selectedDistrict?.id === district.id ? "is-selected" : ""}`} style={{ backgroundImage: `url(${entityImage(20, district, selectedState.name)})` }}>
                     <span className="district-shade" /><span className="district-name">{district.name}</span><span className="district-arrow">→</span>
                   </button>
                 ))}
@@ -413,7 +457,7 @@ export default function Home() {
               <div className="place-grid">
                 {places.map((place, index) => (
                   <button key={place.id} onClick={() => handlePlaceClick(place)} className={`place-card ${selectedPlace?.id === place.id ? "is-selected" : ""}`}>
-                    <span className="place-image" style={{ backgroundImage: `url(${imageForPlace(index + 2, place)})` }} />
+                    <span className="place-image" style={{ backgroundImage: `url(${imageForPlace(index + 2, place, `${selectedDistrict.name} ${selectedPlace?.name || ""}`)})` }} />
                     <span className="place-number">0{index + 1}</span>
                     <span className="place-content"><strong>{place.name}</strong><span>{place.description}</span></span>
                     <span className="place-details"><span>✦ Local pick</span><span>{selectedPlace?.id === place.id ? "Selected ✓" : "Explore →"}</span></span>
@@ -449,7 +493,7 @@ export default function Home() {
                       const isAdded = addedItems.has(item.id);
                       return (
                         <article key={item.id} className="subplace-card bg-[#111] border border-white/10 p-5 rounded-2xl flex flex-col justify-between">
-                          <div className="subplace-image h-32 rounded-xl mb-4" style={{ backgroundImage: `url(${entityImage(index + 3, item)})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                          <div className="subplace-image h-32 rounded-xl mb-4" style={{ backgroundImage: `url(${entityImage(index + 3, item, `${selectedDistrict?.name || ""} ${selectedPlace?.name || ""}`)})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
                           <div className="flex justify-between items-start mb-2">
                             <h4 className="text-white font-bold text-lg">{item.name}</h4>
                             <span className="text-xs bg-white/10 text-white/70 px-2 py-1 rounded">{item.distance_km} km</span>
