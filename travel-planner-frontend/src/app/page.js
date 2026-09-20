@@ -310,6 +310,16 @@ export default function Home() {
 
       <section className="hero">
         <div className="hero-scene" aria-hidden="true">
+          <video
+            className="hero-video"
+            autoPlay
+            muted
+            loop
+            playsInline
+            poster="https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=2200&q=90"
+          >
+            <source src="https://cdn.coverr.co/videos/coverr-aerial-view-of-mountains-1577/1080p.mp4" type="video/mp4" />
+          </video>
           <div className="scene-sun" />
           <div className="scene-mountain scene-mountain-back" />
           <div className="scene-mountain scene-mountain-front" />
