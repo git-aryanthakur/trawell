@@ -316,9 +316,9 @@ export default function Home() {
             muted
             loop
             playsInline
-            poster="https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=2200&q=90"
+            poster="https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=2200&q=90"
           >
-            <source src="https://cdn.coverr.co/videos/coverr-aerial-view-of-mountains-1577/1080p.mp4" type="video/mp4" />
+            <source src="https://videos.pexels.com/video-files/26319339/11948008_3840_2160_60fps.mp4" type="video/mp4" />
           </video>
           <div className="scene-sun" />
           <div className="scene-mountain scene-mountain-back" />
