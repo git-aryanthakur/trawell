@@ -272,6 +272,21 @@ button { -webkit-tap-highlight-color: transparent; }
 .map-frame .mapboxgl-ctrl-top-right { top: 72px; }
 .map-frame .mapboxgl-ctrl-group { border: 0; overflow: hidden; border-radius: 5px; box-shadow: 0 7px 18px #061d1766; }
 .map-frame .mapboxgl-ctrl-group button { background-color: #10251fcc; }
+.map-marker { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0; border: 2px solid #8cbbff; border-radius: 50%; background: #152f3a; color: #fff; cursor: pointer; box-shadow: 0 5px 14px #061d1788; transition: transform .2s, background .2s, border-color .2s; }
+.map-marker:hover, .map-marker.is-active { border-color: #f3b08d; background: #d97951; transform: scale(1.18); }
+.map-spot-card { position: absolute; z-index: 4; right: 14px; bottom: 14px; left: 14px; display: grid; grid-template-columns: 104px 1fr; overflow: hidden; border: 1px solid #ffffff2e; border-radius: 8px; background: #10251fee; box-shadow: 0 16px 32px #061d1766; color: #fff; backdrop-filter: blur(15px); animation: rise .25s ease both; }
+.map-spot-image { min-height: 155px; background-position: center; background-size: cover; }
+.map-spot-body { position: relative; padding: 15px 17px 13px; }
+.map-spot-close { position: absolute; z-index: 1; top: 8px; right: 9px; width: 24px; height: 24px; border: 1px solid #ffffff32; border-radius: 50%; background: #061d1788; color: #fff; cursor: pointer; font-size: 17px; line-height: 18px; }
+.map-spot-kicker { display: block; padding-right: 22px; color: #e6b28d; font-size: 8px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+.map-spot-body h3 { margin: 7px 0 5px; font-family: Georgia, serif; font-size: 22px; font-weight: 400; }
+.map-spot-body p { display: -webkit-box; overflow: hidden; margin: 0; color: #c0d0c5; font-size: 11px; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.map-spot-route { display: flex; align-items: baseline; gap: 8px; margin-top: 11px; padding: 8px 0; border-top: 1px solid #ffffff18; border-bottom: 1px solid #ffffff18; color: #b9cdbd; font-size: 9px; }
+.map-spot-route strong { margin-left: auto; color: #f3b08d; font-size: 14px; }
+.map-spot-route small { color: #8fa99a; font-size: 9px; }
+.map-spot-footer { display: flex; justify-content: space-between; gap: 8px; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid #ffffff18; color: #aec5b4; font-size: 9px; }
+.map-spot-footer i { display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; background: #9bd5a4; }
+.map-spot-footer button { padding: 0; border: 0; background: transparent; color: #f3b08d; cursor: pointer; font-size: 9px; font-weight: 800; white-space: nowrap; }
 
 @media (max-width: 900px) {
   .state-grid, .district-grid { grid-template-columns: repeat(2, 1fr); }
@@ -305,4 +320,10 @@ button { -webkit-tap-highlight-color: transparent; }
   .map-toolbar strong { grid-column: 1; }
   .map-legend { grid-column: 2; grid-row: 1; }
   .footer { width: calc(100% - 32px); gap: 15px; line-height: 1.5; }
+  .map-spot-card { grid-template-columns: 84px 1fr; right: 10px; bottom: 10px; left: 10px; }
+  .map-spot-image { min-height: 170px; }
+  .map-spot-body { padding: 12px; }
+  .map-spot-body h3 { font-size: 19px; }
+  .map-spot-footer span { display: none; }
+  .map-spot-route { gap: 5px; }
 }

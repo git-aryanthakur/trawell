@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 
 // --- Mapbox Imports ---
-import Map, { Marker } from 'react-map-gl';
+import Map, { Layer, Marker, Source } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -131,6 +131,8 @@ export default function Home() {
   const [subplaces, setSubplaces] = useState(null);
   const [subplacesLoading, setSubplacesLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("hidden_gem");
+  const [selectedMapSpot, setSelectedMapSpot] = useState(null);
+  const [selectedRoute, setSelectedRoute] = useState(null);
 
   const [activeTrip, setActiveTrip] = useState(null);
   const [addedItems, setAddedItems] = useState(new Set());
@@ -159,6 +161,41 @@ export default function Home() {
       .catch((error) => console.error("Error fetching states:", error))
       .finally(() => setStatesLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!selectedMapSpot?.lat || !selectedMapSpot?.lng || !selectedPlace?.lat || !selectedPlace?.lng) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    const start = `${Number(selectedPlace.lng)},${Number(selectedPlace.lat)}`;
+    const end = `${Number(selectedMapSpot.lng)},${Number(selectedMapSpot.lat)}`;
+    const fallbackRoute = {
+      type: "Feature",
+      geometry: { type: "LineString", coordinates: [[Number(selectedPlace.lng), Number(selectedPlace.lat)], [Number(selectedMapSpot.lng), Number(selectedMapSpot.lat)]] },
+      properties: {}
+    };
+
+    if (!MAPBOX_TOKEN) return undefined;
+
+    fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${start};${end}?alternatives=false&geometries=geojson&overview=full&access_token=${MAPBOX_TOKEN}`)
+      .then((response) => response.json())
+      .then((data) => {
+        if (cancelled) return;
+        const route = data.routes?.[0];
+        setSelectedRoute(route ? {
+          geometry: { type: "Feature", geometry: route.geometry, properties: {} },
+          distanceKm: (route.distance / 1000).toFixed(1),
+          durationMinutes: Math.round(route.duration / 60),
+          loading: false
+        } : { geometry: fallbackRoute, distanceKm: selectedMapSpot.distance_km, loading: false, fallback: true });
+      })
+      .catch(() => {
+        if (!cancelled) setSelectedRoute({ geometry: fallbackRoute, distanceKm: selectedMapSpot.distance_km, loading: false, fallback: true });
+      });
+
+    return () => { cancelled = true; };
+  }, [selectedMapSpot, selectedPlace]);
 
   useEffect(() => {
     const setupTrip = async () => {
@@ -226,6 +263,8 @@ export default function Home() {
   const handlePlaceClick = async (place) => {
     if (selectedPlace?.id === place.id) return;
     setSelectedPlace(place);
+    setSelectedMapSpot(null);
+    setSelectedRoute(null);
     if (place.lat && place.lng) {
       setViewState({
         longitude: Number(place.lng),
@@ -280,6 +319,20 @@ export default function Home() {
       console.error("Error adding to trip:", error);
       alert("Failed to add place to trip.");
     }
+  };
+
+  const handleMapSpotClick = (spot) => {
+    setSelectedMapSpot(spot);
+    setSelectedRoute({
+      geometry: {
+        type: "Feature",
+        geometry: { type: "LineString", coordinates: [[Number(selectedPlace.lng), Number(selectedPlace.lat)], [Number(spot.lng), Number(spot.lat)]] },
+        properties: {}
+      },
+      distanceKm: spot.distance_km,
+      loading: Boolean(MAPBOX_TOKEN),
+      fallback: true
+    });
   };
 
   // --- Review Handlers ---
@@ -490,7 +543,7 @@ export default function Home() {
                 <div className="w-full lg:w-3/5 flex-shrink-0">
                   <div className="tab-row">
                     {categories.map(({ key, label, icon }) => subplaces[key] && (
-                      <button key={key} onClick={() => setActiveTab(key)} className={activeTab === key ? "active" : ""}>{icon} {label} <small>{subplaces[key].length}</small></button>
+                      <button key={key} onClick={() => { setActiveTab(key); setSelectedMapSpot(null); setSelectedRoute(null); }} className={activeTab === key ? "active" : ""}>{icon} {label} <small>{subplaces[key].length}</small></button>
                     ))}
                   </div>
                   <div className="subplace-grid grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
@@ -543,6 +596,12 @@ export default function Home() {
                       mapStyle="mapbox://styles/mapbox/dark-v11"
                       mapboxAccessToken={MAPBOX_TOKEN}
                     >
+                      {selectedRoute?.geometry && (
+                        <Source id="selected-route" type="geojson" data={selectedRoute.geometry}>
+                          <Layer id="selected-route-casing" type="line" paint={{ "line-color": "#10251f", "line-width": 7, "line-opacity": 0.82 }} layout={{ "line-cap": "round", "line-join": "round" }} />
+                          <Layer id="selected-route-line" type="line" paint={{ "line-color": "#f3b08d", "line-width": 3, "line-opacity": 1, "line-dasharray": [1, 1.5] }} layout={{ "line-cap": "round", "line-join": "round" }} />
+                        </Source>
+                      )}
                       <Marker longitude={Number(selectedPlace.lng)} latitude={Number(selectedPlace.lat)}>
                         <div className="bg-rose-500 text-white p-2 rounded-full shadow-lg border-2 border-white animate-bounce cursor-pointer flex items-center gap-2">
                            <span className="font-bold text-xs uppercase px-1">{selectedPlace.name}</span>
@@ -552,16 +611,29 @@ export default function Home() {
                       {subplaces[activeTab]?.map((item) => (
                         item.lat && item.lng && (
                           <Marker key={item.id} longitude={Number(item.lng)} latitude={Number(item.lat)}>
-                            <div className="bg-slate-800 text-white w-8 h-8 rounded-full shadow-lg border-2 border-indigo-500 flex items-center justify-center cursor-pointer hover:scale-125 transition-transform hover:z-50 group">
+                            <button type="button" aria-label={`Show details for ${item.name}`} onClick={() => handleMapSpotClick(item)} className={`map-marker ${selectedMapSpot?.id === item.id ? "is-active" : ""}`}>
                               <span className="text-sm">{categories.find(c => c.key === activeTab)?.icon || '📍'}</span>
                               <div className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-white text-slate-900 text-xs font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none shadow-xl">
                                 {item.name}
                               </div>
-                            </div>
+                            </button>
                           </Marker>
                         )
                       ))}
                     </Map>
+                  )}
+                  {selectedMapSpot && (
+                    <aside className="map-spot-card" aria-live="polite">
+                      <button type="button" aria-label="Close place details" className="map-spot-close" onClick={() => setSelectedMapSpot(null)}>×</button>
+                      <div className="map-spot-image" style={{ backgroundImage: `url(${entityImage(7, selectedMapSpot, `${selectedDistrict?.name || ""} ${selectedPlace.name}`)})` }} />
+                      <div className="map-spot-body">
+                        <span className="map-spot-kicker">{categories.find(c => c.key === activeTab)?.label || "Local spot"} · {selectedMapSpot.distance_km || "Nearby"} km away</span>
+                        <h3>{selectedMapSpot.name}</h3>
+                        <p>{selectedMapSpot.description || "A local stop worth slowing down for, with scenery and stories around every turn."}</p>
+                        <div className="map-spot-route"><span>{selectedRoute?.loading ? "Tracing route..." : selectedRoute?.fallback ? "Direct route estimate" : "Route traced"}</span><strong>{selectedRoute?.distanceKm || selectedMapSpot.distance_km || "--"} km</strong>{selectedRoute?.durationMinutes ? <small>{selectedRoute.durationMinutes} min drive</small> : null}</div>
+                        <div className="map-spot-footer"><span><i /> Scenery worth the detour</span><button type="button" onClick={() => handleOpenReviews(selectedMapSpot)}>Traveler notes →</button></div>
+                      </div>
+                    </aside>
                   )}
                 </div>
 
