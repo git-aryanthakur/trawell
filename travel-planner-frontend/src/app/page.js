@@ -27,6 +27,16 @@ const travelImages = [
   "https://images.unsplash.com/photo-1470214304380-aadaedcfff1b?auto=format&fit=crop&w=900&q=85",
 ];
 
+const travelVideos = [
+  "https://videos.pexels.com/video-files/3045163/3045163-hd_1920_1080_25fps.mp4",
+  "https://videos.pexels.com/video-files/857195/857195-hd_1920_1080_30fps.mp4",
+  "https://videos.pexels.com/video-files/4434249/4434249-hd_1920_1080_25fps.mp4",
+];
+
+function videoFor(index = 0) {
+  return travelVideos[Math.abs(index) % travelVideos.length];
+}
+
 const locationImages = {
   "chalal village": "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1200&q=90",
   "kasol": "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1200&q=90",
@@ -115,7 +125,15 @@ function Spinner({ light = false }) {
   return <span className={`spinner ${light ? "spinner-light" : ""}`} aria-label="Loading" />;
 }
 
-const FALLBACK_TRIP_DATE = "2026-10-01";
+function todayTripDate() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+const FALLBACK_TRIP_DATE = todayTripDate();
 
 function normalizeTripDate(value) {
   const candidate = String(value || "").slice(0, 10);
@@ -166,9 +184,11 @@ function formatMinutes(minutes) {
 }
 
 export default function Home() {
+  const [theme, setTheme] = useState("light");
   const [states, setStates] = useState([]);
   const [statesLoading, setStatesLoading] = useState(true);
   const [selectedState, setSelectedState] = useState(null);
+  const [scrollTarget, setScrollTarget] = useState(null);
   
   const [districts, setDistricts] = useState([]);
   const [districtsLoading, setDistrictsLoading] = useState(false);
@@ -189,11 +209,11 @@ export default function Home() {
   const [addedItems, setAddedItems] = useState(new Set());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState(1);
-  const [tripMeta, setTripMeta] = useState({ title: "My Epic Journey", startDate: "2026-10-01", duration: 5, notes: "" });
+  const [tripMeta, setTripMeta] = useState({ title: "My Epic Journey", startDate: FALLBACK_TRIP_DATE, duration: 5, notes: "" });
   const [routeEstimate, setRouteEstimate] = useState({ loading: false, distanceKm: 0, durationMinutes: 0, stops: 0, source: "" });
   const [isCreatingTrip, setIsCreatingTrip] = useState(false);
   const [showNewTrip, setShowNewTrip] = useState(false);
-  const [newTrip, setNewTrip] = useState({ title: "", startDate: "2026-10-01", duration: 5 });
+  const [newTrip, setNewTrip] = useState({ title: "", startDate: FALLBACK_TRIP_DATE, duration: 5 });
 
   // --- REVIEWS & PHOTOS STATE ---
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -211,6 +231,18 @@ export default function Home() {
     latitude: 32.0100,  
     zoom: 13
   });
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("wanderwise-theme");
+    const preferredTheme = window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    const themeTimer = setTimeout(() => setTheme(savedTheme || preferredTheme), 0);
+    return () => clearTimeout(themeTimer);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("wanderwise-theme", theme);
+  }, [theme]);
 
   useEffect(() => {
     axios.get(`${API_URL}/states`)
@@ -311,8 +343,8 @@ export default function Home() {
           const { data: newTrip } = await axios.post(`${API_URL}/trips`, {
             user_id: DUMMY_USER_ID,
             title: "My Epic Journey",
-            start_date: "2026-10-01",
-            end_date: "2026-10-15"
+            start_date: FALLBACK_TRIP_DATE,
+            end_date: dateAfter(FALLBACK_TRIP_DATE, 15)
           });
           setTrips([newTrip]);
           setActiveTrip(newTrip);
@@ -324,6 +356,17 @@ export default function Home() {
     };
     setupTrip();
   }, []);
+
+  useEffect(() => {
+    if (!scrollTarget) return undefined;
+
+    const scrollTimer = setTimeout(() => {
+      document.getElementById(scrollTarget)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setScrollTarget(null);
+    }, 80);
+
+    return () => clearTimeout(scrollTimer);
+  }, [scrollTarget]);
 
   const persistTripMeta = (nextMeta, trip = activeTrip) => {
     setTripMeta(nextMeta);
@@ -360,6 +403,29 @@ export default function Home() {
     }
   };
 
+  const handleDeleteTrip = async (trip) => {
+    if (!window.confirm(`Delete ${trip.title || "this trip"} and all its planned stops?`)) return;
+    const tripId = trip.trip_id || trip.id;
+    try {
+      await axios.delete(`${API_URL}/trips/${tripId}`);
+      const remainingTrips = trips.filter(item => (item.trip_id || item.id) !== tripId);
+      setTrips(remainingTrips);
+      localStorage.removeItem(`wanderwise-trip-${tripId}`);
+      if ((activeTrip?.trip_id || activeTrip?.id) === tripId) {
+        const nextTrip = remainingTrips[0];
+        if (nextTrip) handleSelectTrip(nextTrip);
+        else {
+          setActiveTrip(null);
+          setAddedItems(new Set());
+          setTripMeta({ title: "", startDate: FALLBACK_TRIP_DATE, duration: 1, notes: "" });
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting trip:", error);
+      alert("Could not delete this trip. Please try again.");
+    }
+  };
+
   const handleStateClick = async (state) => {
     if (selectedState?.id === state.id) return;
     setSelectedState(state);
@@ -368,6 +434,7 @@ export default function Home() {
     setSelectedPlace(null);
     setPlaces([]);
     setSubplaces(null);
+    setScrollTarget("district-selection");
     setDistrictsLoading(true);
     try {
       const { data } = await axios.get(`${API_URL}/states/${state.id}/districts`);
@@ -385,6 +452,7 @@ export default function Home() {
     setSelectedPlace(null);
     setPlaces([]);
     setSubplaces(null);
+    setScrollTarget("places-selection");
     setPlacesLoading(true);
     try {
       const { data } = await axios.get(`${API_URL}/districts/${district.id}/places`);
@@ -401,6 +469,7 @@ export default function Home() {
     setSelectedPlace(place);
     setSelectedMapSpot(null);
     setSelectedRoute(null);
+    setScrollTarget("shortlist");
     if (place.lat && place.lng) {
       setViewState({
         longitude: Number(place.lng),
@@ -478,6 +547,7 @@ export default function Home() {
   };
 
   const handleRemoveTripItem = async (item) => {
+    if (!window.confirm(`Remove ${item.name} from this trip?`)) return;
     const currentTripId = activeTrip.trip_id || activeTrip.id;
     try {
       await axios.delete(`${API_URL}/trips/${currentTripId}/items/${item.item_id}`);
@@ -569,6 +639,9 @@ export default function Home() {
         </nav>
         <div className="flex gap-4 items-center">
             <div className="topbar-note"><span className="live-dot" /> For the beautifully lost</div>
+            <button type="button" className="theme-toggle" onClick={() => setTheme(currentTheme => currentTheme === "light" ? "dark" : "light")} aria-label={`Switch to ${theme === "light" ? "dark" : "light"} theme`} title={`Switch to ${theme === "light" ? "dark" : "light"} theme`}>
+              <span aria-hidden="true">{theme === "light" ? "☾" : "☀"}</span>
+            </button>
             {activeTrip && (
                 <button 
                   onClick={() => setIsModalOpen(true)}
@@ -588,19 +661,13 @@ export default function Home() {
             muted
             loop
             playsInline
-            poster="https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=2200&q=90"
+            preload="metadata"
+            poster="https://images.unsplash.com/photo-1551632811-561732d1e306?auto=format&fit=crop&w=2200&q=90"
           >
-            <source src="https://videos.pexels.com/video-files/26319339/11948008_3840_2160_60fps.mp4" type="video/mp4" />
+            <source src={travelVideos[1]} type="video/mp4" />
           </video>
-          <div className="scene-sun" />
-          <div className="scene-mountain scene-mountain-back" />
-          <div className="scene-mountain scene-mountain-front" />
-          <div className="scene-haze" />
-          <div className="scene-stars" />
+          <div className="hero-stars" aria-hidden="true" />
         </div>
-        <div className="hero-orb hero-orb-one" />
-        <div className="hero-orb hero-orb-two" />
-        <div className="hero-route" aria-hidden="true"><span /><span /><span /></div>
         <div className="hero-content">
           <div className="hero-kicker"><span className="pulse-ring" /> A field guide for curious souls</div>
           <h1>Somewhere<br /><em>beautiful is waiting.</em></h1>
@@ -611,9 +678,6 @@ export default function Home() {
             <span><strong>02</strong> Follow your curiosity</span>
           </div>
         </div>
-        <div className="floating-place floating-place-top"><span>✦</span><div><strong>Spiti Valley</strong><small>Himachal Pradesh</small></div></div>
-        <div className="floating-place floating-place-bottom"><span>◉</span><div><strong>Secret coastlines</strong><small>Goa · 12 hidden spots</small></div></div>
-        <div className="hero-stamp"><span>DISCOVER</span><strong>OFF<br />BEAT</strong><span>TRAVEL</span></div>
       </section>
 
       <div className="content-wrap" id="journey">
@@ -646,6 +710,7 @@ export default function Home() {
             <div className="state-grid">
               {states.map((state, index) => (
                 <button key={state.id} onClick={() => handleStateClick(state)} className={`state-card ${selectedState?.id === state.id ? "is-selected" : ""}`} style={{ backgroundImage: `url(${state.image_url || state.photo_url || imageFor(index, state.name)})` }}>
+                  <video className="card-video" autoPlay muted loop playsInline preload="metadata" poster={state.image_url || state.photo_url || imageFor(index, state.name)}><source src={videoFor(index)} type="video/mp4" /></video>
                   <span className="card-shade" />
                   <span className="card-index">0{index + 1}</span>
                   <span className="state-name">{state.name}</span>
@@ -658,7 +723,7 @@ export default function Home() {
         </section>
 
         {selectedState && (
-          <section className="discovery-section reveal">
+          <section className="discovery-section reveal" id="district-selection">
             <div className="section-heading">
               <div className="step-number">02</div>
               <div><p className="eyebrow">Narrow it down</p><h3>Around {selectedState.name}</h3></div>
@@ -668,6 +733,7 @@ export default function Home() {
               <div className="district-grid">
                 {districts.map((district) => (
                   <button key={district.id} onClick={() => handleDistrictClick(district)} className={`district-card ${selectedDistrict?.id === district.id ? "is-selected" : ""}`} style={{ backgroundImage: `url(${entityImage(20, district, selectedState.name)})` }}>
+                    <video className="card-video" autoPlay muted loop playsInline preload="metadata" poster={entityImage(20, district, selectedState.name)}><source src={videoFor(Number(district.id) || 20)} type="video/mp4" /></video>
                     <span className="district-shade" /><span className="district-name">{district.name}</span><span className="district-arrow">→</span>
                   </button>
                 ))}
@@ -677,7 +743,7 @@ export default function Home() {
         )}
 
         {selectedDistrict && (
-          <section className="discovery-section reveal">
+          <section className="discovery-section reveal" id="places-selection">
             <div className="section-heading">
               <div className="step-number">03</div>
               <div><p className="eyebrow">Make the day yours</p><h3>Small wonders around {selectedDistrict.name}</h3></div>
@@ -689,7 +755,7 @@ export default function Home() {
               <div className="place-grid">
                 {places.map((place, index) => (
                   <button key={place.id} onClick={() => handlePlaceClick(place)} className={`place-card ${selectedPlace?.id === place.id ? "is-selected" : ""}`}>
-                    <span className="place-image" style={{ backgroundImage: `url(${imageForPlace(index + 2, place, `${selectedDistrict.name} ${selectedPlace?.name || ""}`)})` }} />
+                    <span className="place-image" style={{ backgroundImage: `url(${imageForPlace(index + 2, place, `${selectedDistrict.name} ${selectedPlace?.name || ""}`)})` }}><video autoPlay muted loop playsInline preload="metadata" poster={imageForPlace(index + 2, place, selectedDistrict.name)}><source src={videoFor(index + 2)} type="video/mp4" /></video></span>
                     <span className="place-number">0{index + 1}</span>
                     <span className="place-content"><strong>{place.name}</strong><span>{place.description}</span></span>
                     <span className="place-details"><span>✦ Local pick</span><span>{selectedPlace?.id === place.id ? "Selected ✓" : "Explore →"}</span></span>
@@ -725,7 +791,7 @@ export default function Home() {
                       const isAdded = addedItems.has(item.id);
                       return (
                         <article key={item.id} className="subplace-card bg-[#111] border border-white/10 p-5 rounded-2xl flex flex-col justify-between">
-                          <div className="subplace-image h-32 rounded-xl mb-4" style={{ backgroundImage: `url(${entityImage(index + 3, item, `${selectedDistrict?.name || ""} ${selectedPlace?.name || ""}`)})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                          <div className="subplace-image h-32 rounded-xl mb-4" style={{ backgroundImage: `url(${entityImage(index + 3, item, `${selectedDistrict?.name || ""} ${selectedPlace?.name || ""}`)})`, backgroundSize: 'cover', backgroundPosition: 'center' }}><video autoPlay muted loop playsInline preload="metadata" poster={entityImage(index + 3, item, `${selectedDistrict?.name || ""} ${selectedPlace?.name || ""}`)}><source src={videoFor(index + 3)} type="video/mp4" /></video></div>
                           <div className="flex justify-between items-start mb-2">
                             <div><span className="subplace-index">0{index + 1} / {categories.find(c => c.key === activeTab)?.label}</span><h4 className="text-white font-bold text-lg">{item.name}</h4></div>
                             <span className="distance-chip">{item.distance_km} km</span>
@@ -822,16 +888,19 @@ export default function Home() {
         <div className="trip-modal fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
           <div className="trip-dialog w-full max-w-5xl max-h-[92vh] overflow-hidden flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <div className="trip-planner-head">
-              <div><p className="eyebrow">Your travel desk</p><h2>Plan the days that stay with you.</h2><p>{activeTrip?.itinerary_items?.length || 0} stops across {tripMeta.duration} days</p></div>
+              <video className="planner-head-video" autoPlay muted loop playsInline preload="metadata" poster="https://images.unsplash.com/photo-1551632811-561732d1e306?auto=format&fit=crop&w=1600&q=85"><source src={travelVideos[1]} type="video/mp4" /></video>
+              <div className="trip-planner-head-copy"><p className="eyebrow">Your travel desk</p><h2>Plan the days that stay with you.</h2><p>{activeTrip?.itinerary_items?.length || 0} stops across {tripMeta.duration} days</p></div>
               <button aria-label="Close trip planner" onClick={() => setIsModalOpen(false)} className="trip-close">✕</button>
             </div>
             <div className="trip-planner-body">
+              <video className="planner-video" autoPlay muted loop playsInline preload="metadata" poster="https://images.unsplash.com/photo-1551632811-561732d1e306?auto=format&fit=crop&w=1800&q=85"><source src={travelVideos[1]} type="video/mp4" /></video>
               <aside className="trip-sidebar">
                 <div className="trip-sidebar-title"><span>Your trips</span><button type="button" onClick={() => setShowNewTrip(prev => !prev)} aria-label="Create a new trip">+</button></div>
                 {trips.map(trip => (
-                  <button key={trip.trip_id || trip.id} type="button" onClick={() => handleSelectTrip(trip)} className={`trip-list-item ${(activeTrip?.trip_id || activeTrip?.id) === (trip.trip_id || trip.id) ? "active" : ""}`}>
-                    <strong>{trip.title}</strong><span>{trip.start_date ? dateLabel(trip.start_date) : "Flexible dates"}</span>
-                  </button>
+                  <div key={trip.trip_id || trip.id} className={`trip-list-item ${(activeTrip?.trip_id || activeTrip?.id) === (trip.trip_id || trip.id) ? "active" : ""}`}>
+                    <button type="button" onClick={() => handleSelectTrip(trip)} className="trip-select"><strong>{trip.title}</strong><span>{trip.start_date ? dateLabel(trip.start_date) : "Flexible dates"}</span></button>
+                    <button type="button" className="trip-delete" title={`Delete ${trip.title}`} aria-label={`Delete ${trip.title}`} onClick={() => handleDeleteTrip(trip)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M9 7V4h6v3m-9 0 1 13h8l1-13" /></svg></button>
+                  </div>
                 ))}
                 {showNewTrip && (
                   <form className="new-trip-form" onSubmit={handleCreateTrip}>
@@ -859,7 +928,7 @@ export default function Home() {
                 </div>
                 <div className="day-plan-head"><div><p className="eyebrow">{dateLabel(activeTripDays[selectedDay - 1]?.date || tripMeta.startDate)}</p><h3>Day {selectedDay} itinerary</h3></div><span>{activeDayStops.length} planned stop{activeDayStops.length === 1 ? "" : "s"}</span></div>
                 {activeDayStops.length === 0 ? <div className="day-empty"><span>✦</span><strong>A blank page for a good day.</strong><p>Save places from the discovery area, then assign them to this day.</p></div> : (
-                  <div className="day-stop-list">{activeDayStops.map((stop, index) => <div key={stop.item_id || `${stop.name}-${index}`} className="day-stop"><span className="day-stop-number">{String(index + 1).padStart(2, "0")}</span><div><strong>{stop.name}</strong><span>{stop.category?.replaceAll("_", " ") || "Local stop"} {stop.distance_km ? `· ${stop.distance_km} km` : ""}</span></div><div className="day-stop-actions"><span className="day-stop-time">{index === 0 ? "Morning" : index === 1 ? "Afternoon" : "Evening"}</span><select aria-label={`Move ${stop.name} to another day`} value={dayForTripItem(stop, tripMeta.startDate)} onChange={event => handleMoveTripItem(stop, event.target.value)}>{activeTripDays.map(({ day }) => <option key={day} value={day}>Day {day}</option>)}</select><button type="button" aria-label={`Remove ${stop.name} from trip`} onClick={() => handleRemoveTripItem(stop)}>Remove</button></div></div>)}</div>
+                  <div className="day-stop-list">{activeDayStops.map((stop, index) => <div key={stop.item_id || `${stop.name}-${index}`} className="day-stop"><span className="day-stop-number">{String(index + 1).padStart(2, "0")}</span><div className="day-stop-copy"><strong>{stop.name}</strong><span>{stop.category?.replaceAll("_", " ") || "Local stop"} {stop.distance_km ? `· ${stop.distance_km} km` : ""}</span></div><div className="day-stop-actions"><span className="day-stop-time">{index === 0 ? "Morning" : index === 1 ? "Afternoon" : "Evening"}</span><label className="move-day"><span>Move to</span><select aria-label={`Move ${stop.name} to another day`} value={dayForTripItem(stop, tripMeta.startDate)} onChange={event => handleMoveTripItem(stop, event.target.value)}>{activeTripDays.map(({ day }) => <option key={day} value={day}>Day {day}</option>)}</select></label><button type="button" className="delete-stop" title={`Remove ${stop.name}`} aria-label={`Remove ${stop.name} from trip`} onClick={() => handleRemoveTripItem(stop)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M9 7V4h6v3m-9 0 1 13h8l1-13" /></svg></button></div></div>)}</div>
                 )}
               </section>
             </div>

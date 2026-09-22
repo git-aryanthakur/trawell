@@ -110,7 +110,30 @@ app.post('/api/trips', async (req, res) => {
     }
 });
 
-// 2. Add a Subplace (Hidden Gem/Cafe) to a Trip
+// 2. Delete a trip and its planned stops
+app.delete('/api/trips/:tripId', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const { tripId } = req.params;
+        await client.query('BEGIN');
+        await client.query('DELETE FROM trip_items WHERE trip_id = $1', [tripId]);
+        const result = await client.query('DELETE FROM trips WHERE id = $1 RETURNING id', [tripId]);
+        if (result.rowCount === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: "Trip not found" });
+        }
+        await client.query('COMMIT');
+        res.status(204).send();
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error("Error deleting trip:", err.message);
+        res.status(500).json({ error: "Failed to delete trip" });
+    } finally {
+        client.release();
+    }
+});
+
+// 3. Add a Subplace (Hidden Gem/Cafe) to a Trip
 app.post('/api/trips/:tripId/items', async (req, res) => {
     try {
         const { tripId } = req.params;
