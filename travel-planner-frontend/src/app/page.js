@@ -154,16 +154,6 @@ export default function Home() {
   });
 
   useEffect(() => {
-    if (selectedPlace?.lat && selectedPlace?.lng) {
-      setViewState({
-        longitude: Number(selectedPlace.lng),
-        latitude: Number(selectedPlace.lat),
-        zoom: 13
-      });
-    }
-  }, [selectedPlace]);
-
-  useEffect(() => {
     axios.get(`${API_URL}/states`)
       .then(({ data }) => setStates(data))
       .catch((error) => console.error("Error fetching states:", error))
@@ -236,6 +226,13 @@ export default function Home() {
   const handlePlaceClick = async (place) => {
     if (selectedPlace?.id === place.id) return;
     setSelectedPlace(place);
+    if (place.lat && place.lng) {
+      setViewState({
+        longitude: Number(place.lng),
+        latitude: Number(place.lat),
+        zoom: 13
+      });
+    }
     setSubplaces(null);
     setSubplacesLoading(true);
     try {
@@ -339,6 +336,10 @@ export default function Home() {
     <main className="app-shell">
       <header className="topbar">
         <div className="brand"><span className="brand-mark">✦</span><span>Wanderwise</span></div>
+        <nav className="topbar-nav" aria-label="Primary navigation">
+          <a href="#journey">Discover</a>
+          <a href="#shortlist">Shortlist</a>
+        </nav>
         <div className="flex gap-4 items-center">
             <div className="topbar-note"><span className="live-dot" /> For the beautifully lost</div>
             {activeTrip && (
@@ -397,6 +398,7 @@ export default function Home() {
           <div className="progress-wrap">
             <div className="progress-label"><span>YOUR TRAIL</span><strong>{step} / 4</strong></div>
             <div className="progress-track"><span style={{ width: `${step * 25}%` }} /></div>
+            <span className="progress-caption">{selectedPlace ? "Shortlist ready" : "Keep exploring"}</span>
           </div>
         </div>
 
@@ -410,6 +412,7 @@ export default function Home() {
             <div className="section-heading">
             <div className="step-number">01</div>
               <div><p className="eyebrow">Choose your first horizon</p><h3>Where does your curiosity point?</h3></div>
+            <span className="section-meta">{states.length} regions</span>
             {selectedState && <span className="selected-pill">✓ {selectedState.name}</span>}
           </div>
           {statesLoading ? <div className="loading-row"><Spinner /> Loading destinations...</div> : (
@@ -432,6 +435,7 @@ export default function Home() {
             <div className="section-heading">
               <div className="step-number">02</div>
               <div><p className="eyebrow">Narrow it down</p><h3>Around {selectedState.name}</h3></div>
+              <span className="section-meta">{districts.length} districts</span>
             </div>
             {districtsLoading ? <div className="loading-row"><Spinner /> Reading the landscape...</div> : (
               <div className="district-grid">
@@ -450,6 +454,7 @@ export default function Home() {
             <div className="section-heading">
               <div className="step-number">03</div>
               <div><p className="eyebrow">Make the day yours</p><h3>Small wonders around {selectedDistrict.name}</h3></div>
+              <span className="section-meta">{places.length} local picks</span>
             </div>
             {placesLoading ? <div className="loading-row"><Spinner /> Uncovering the good stuff...</div> : places.length === 0 ? (
               <div className="empty-state">This trail is still being written. Try another district.</div>
@@ -470,7 +475,7 @@ export default function Home() {
 
         {/* --- MAP & EXPLORATION HUB SPLIT LAYOUT --- */}
         {selectedPlace && (
-          <section className="explore-panel reveal">
+          <section className="explore-panel reveal" id="shortlist">
             <div className="panel-heading">
               <div><p className="eyebrow eyebrow-light">Your personal shortlist</p><h2>Worth the detour<span>.</span></h2><p>Little places, long memories, and the best reasons to linger in {selectedPlace.name}.</p></div>
               <div className="panel-badge">✦<span>EDITOR&apos;S<br />PICK</span></div>
@@ -495,8 +500,8 @@ export default function Home() {
                         <article key={item.id} className="subplace-card bg-[#111] border border-white/10 p-5 rounded-2xl flex flex-col justify-between">
                           <div className="subplace-image h-32 rounded-xl mb-4" style={{ backgroundImage: `url(${entityImage(index + 3, item, `${selectedDistrict?.name || ""} ${selectedPlace?.name || ""}`)})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
                           <div className="flex justify-between items-start mb-2">
-                            <h4 className="text-white font-bold text-lg">{item.name}</h4>
-                            <span className="text-xs bg-white/10 text-white/70 px-2 py-1 rounded">{item.distance_km} km</span>
+                            <div><span className="subplace-index">0{index + 1} / {categories.find(c => c.key === activeTab)?.label}</span><h4 className="text-white font-bold text-lg">{item.name}</h4></div>
+                            <span className="distance-chip">{item.distance_km} km</span>
                           </div>
                           <p className="text-white/60 text-sm mb-4 line-clamp-2">{item.description}</p>
                           
@@ -524,10 +529,11 @@ export default function Home() {
 
                 {/* Right Side: Mapbox Map */}
                 <div className="map-frame w-full lg:w-2/5 h-[600px] rounded-3xl overflow-hidden shadow-2xl border-4 border-white/5 sticky top-8 bg-slate-900 relative">
+                  <div className="map-toolbar"><span><i /> LIVE AREA MAP</span><strong>{selectedPlace.name}</strong><span className="map-legend"><b /> {subplaces[activeTab]?.length || 0} stops</span></div>
                   {!selectedPlace.lat ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-white/50 p-6 text-center">
                       <span className="text-4xl mb-3">🗺️</span>
-                      <p>Map data isn't available for this region yet.</p>
+                      <p>Map data isn&apos;t available for this region yet.</p>
                       <p className="text-xs mt-2 opacity-70">Try viewing Kasol in Himachal Pradesh to see the map in action!</p>
                     </div>
                   ) : (
