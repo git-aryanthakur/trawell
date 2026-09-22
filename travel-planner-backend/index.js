@@ -133,7 +133,45 @@ app.post('/api/trips/:tripId/items', async (req, res) => {
     }
 });
 
-// 3. Get all Trips for a User (with nested items)
+// 3. Move an itinerary item to another day
+app.patch('/api/trips/:tripId/items/:itemId', async (req, res) => {
+    try {
+        const { tripId, itemId } = req.params;
+        const { visit_date } = req.body;
+        const result = await pool.query(
+            `UPDATE trip_items
+             SET visit_date = $1
+             WHERE id = $2 AND trip_id = $3
+             RETURNING *`,
+            [visit_date, itemId, tripId]
+        );
+
+        if (result.rowCount === 0) return res.status(404).json({ error: "Trip item not found" });
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error("Error moving trip item:", err.message);
+        res.status(500).json({ error: "Failed to move trip item" });
+    }
+});
+
+// 4. Remove an itinerary item
+app.delete('/api/trips/:tripId/items/:itemId', async (req, res) => {
+    try {
+        const { tripId, itemId } = req.params;
+        const result = await pool.query(
+            'DELETE FROM trip_items WHERE id = $1 AND trip_id = $2 RETURNING id',
+            [itemId, tripId]
+        );
+
+        if (result.rowCount === 0) return res.status(404).json({ error: "Trip item not found" });
+        res.status(204).send();
+    } catch (err) {
+        console.error("Error removing trip item:", err.message);
+        res.status(500).json({ error: "Failed to remove trip item" });
+    }
+});
+
+// 5. Get all Trips for a User (with nested items)
 app.get('/api/users/:userId/trips', async (req, res) => {
     try {
         const { userId } = req.params;
@@ -152,6 +190,9 @@ app.get('/api/users/:userId/trips', async (req, res) => {
                             'name', sp.name,
                             'category', sp.category,
                             'distance_km', sp.distance_from_primary_km,
+                            'lat', sp.lat,
+                            'lng', sp.lng,
+                            'visit_date', ti.visit_date,
                             'notes', ti.notes
                         ) ORDER BY ti.visit_date ASC
                     ) FILTER (WHERE ti.id IS NOT NULL), '[]'

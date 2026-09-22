@@ -115,6 +115,56 @@ function Spinner({ light = false }) {
   return <span className={`spinner ${light ? "spinner-light" : ""}`} aria-label="Loading" />;
 }
 
+const FALLBACK_TRIP_DATE = "2026-10-01";
+
+function normalizeTripDate(value) {
+  const candidate = String(value || "").slice(0, 10);
+  const date = new Date(`${candidate}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? FALLBACK_TRIP_DATE : candidate;
+}
+
+function dateAfter(startDate, days) {
+  const date = new Date(`${normalizeTripDate(startDate)}T12:00:00`);
+  date.setDate(date.getDate() + Number(days) - 1);
+  return date.toISOString().slice(0, 10);
+}
+
+function tripDays(startDate, duration) {
+  const safeStartDate = normalizeTripDate(startDate);
+  return Array.from({ length: Number(duration) || 1 }, (_, index) => {
+    const date = new Date(`${safeStartDate}T12:00:00`);
+    date.setDate(date.getDate() + index);
+    return { day: index + 1, date: date.toISOString().slice(0, 10) };
+  });
+}
+
+function dateLabel(date) {
+  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(new Date(`${normalizeTripDate(date)}T12:00:00`));
+}
+
+function dayForTripItem(item, startDate) {
+  if (item.day) return Number(item.day);
+  if (!item.visit_date) return 1;
+  const difference = new Date(`${normalizeTripDate(item.visit_date)}T12:00:00`) - new Date(`${normalizeTripDate(startDate)}T12:00:00`);
+  return Math.max(1, Math.round(difference / 86400000) + 1);
+}
+
+function haversineKm(first, second) {
+  const earthRadiusKm = 6371;
+  const latitudeDelta = (Number(second.lat) - Number(first.lat)) * Math.PI / 180;
+  const longitudeDelta = (Number(second.lng) - Number(first.lng)) * Math.PI / 180;
+  const latitudeOne = Number(first.lat) * Math.PI / 180;
+  const latitudeTwo = Number(second.lat) * Math.PI / 180;
+  const value = Math.sin(latitudeDelta / 2) ** 2 + Math.cos(latitudeOne) * Math.cos(latitudeTwo) * Math.sin(longitudeDelta / 2) ** 2;
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
+}
+
+function formatMinutes(minutes) {
+  const roundedMinutes = Math.max(1, Math.round(minutes));
+  const hours = Math.floor(roundedMinutes / 60);
+  return hours ? `${hours} hr ${roundedMinutes % 60} min` : `${roundedMinutes} min`;
+}
+
 export default function Home() {
   const [states, setStates] = useState([]);
   const [statesLoading, setStatesLoading] = useState(true);
@@ -135,8 +185,15 @@ export default function Home() {
   const [selectedRoute, setSelectedRoute] = useState(null);
 
   const [activeTrip, setActiveTrip] = useState(null);
+  const [trips, setTrips] = useState([]);
   const [addedItems, setAddedItems] = useState(new Set());
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDay, setSelectedDay] = useState(1);
+  const [tripMeta, setTripMeta] = useState({ title: "My Epic Journey", startDate: "2026-10-01", duration: 5, notes: "" });
+  const [routeEstimate, setRouteEstimate] = useState({ loading: false, distanceKm: 0, durationMinutes: 0, stops: 0, source: "" });
+  const [isCreatingTrip, setIsCreatingTrip] = useState(false);
+  const [showNewTrip, setShowNewTrip] = useState(false);
+  const [newTrip, setNewTrip] = useState({ title: "", startDate: "2026-10-01", duration: 5 });
 
   // --- REVIEWS & PHOTOS STATE ---
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -161,6 +218,44 @@ export default function Home() {
       .catch((error) => console.error("Error fetching states:", error))
       .finally(() => setStatesLoading(false));
   }, []);
+
+  useEffect(() => {
+    const orderedStops = [...(activeTrip?.itinerary_items || [])]
+      .sort((first, second) => dayForTripItem(first, tripMeta.startDate) - dayForTripItem(second, tripMeta.startDate));
+    const points = orderedStops.filter(stop => Number.isFinite(Number(stop.lat)) && Number.isFinite(Number(stop.lng)));
+
+    if (points.length < 2) {
+      const resetTimer = setTimeout(() => setRouteEstimate({ loading: false, distanceKm: 0, durationMinutes: 0, stops: points.length, source: "" }), 0);
+      return () => clearTimeout(resetTimer);
+    }
+
+    let fallbackDistance = 0;
+    for (let index = 1; index < points.length; index += 1) fallbackDistance += haversineKm(points[index - 1], points[index]);
+    const fallbackEstimate = {
+      loading: Boolean(MAPBOX_TOKEN),
+      distanceKm: fallbackDistance * 1.35,
+      durationMinutes: (fallbackDistance * 1.35 / 35) * 60,
+      stops: points.length,
+      source: "straight-line estimate"
+    };
+    const fallbackTimer = setTimeout(() => setRouteEstimate(fallbackEstimate), 0);
+
+    if (!MAPBOX_TOKEN) return () => clearTimeout(fallbackTimer);
+    let cancelled = false;
+    const coordinates = points.map(point => `${Number(point.lng)},${Number(point.lat)}`).join(";");
+    fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${coordinates}?alternatives=false&geometries=geojson&overview=false&access_token=${MAPBOX_TOKEN}`)
+      .then(response => response.json())
+      .then(data => {
+        if (cancelled || !data.routes?.[0]) return;
+        const route = data.routes[0];
+        setRouteEstimate({ loading: false, distanceKm: route.distance / 1000, durationMinutes: route.duration / 60, stops: points.length, source: "Mapbox driving route" });
+      })
+      .catch(() => {
+        if (!cancelled) setRouteEstimate({ ...fallbackEstimate, loading: false });
+      });
+
+    return () => { cancelled = true; clearTimeout(fallbackTimer); };
+  }, [activeTrip, tripMeta.startDate]);
 
   useEffect(() => {
     if (!selectedMapSpot?.lat || !selectedMapSpot?.lng || !selectedPlace?.lat || !selectedPlace?.lng) {
@@ -203,7 +298,11 @@ export default function Home() {
         const { data: trips } = await axios.get(`${API_URL}/users/${DUMMY_USER_ID}/trips`);
         
         if (trips.length > 0) {
+          setTrips(trips);
           setActiveTrip(trips[0]);
+          const savedMeta = JSON.parse(localStorage.getItem(`wanderwise-trip-${trips[0].trip_id || trips[0].id}`) || "null");
+          const duration = savedMeta?.duration || Math.max(1, Math.round((new Date(trips[0].end_date) - new Date(trips[0].start_date)) / 86400000) + 1);
+          setTripMeta({ title: trips[0].title, startDate: normalizeTripDate(trips[0].start_date), duration, notes: savedMeta?.notes || "" });
           if (trips[0].itinerary_items) {
              const itemIds = new Set(trips[0].itinerary_items.map(i => i.sub_place_id));
              setAddedItems(itemIds);
@@ -215,7 +314,9 @@ export default function Home() {
             start_date: "2026-10-01",
             end_date: "2026-10-15"
           });
+          setTrips([newTrip]);
           setActiveTrip(newTrip);
+          setTripMeta({ title: newTrip.title, startDate: normalizeTripDate(newTrip.start_date), duration: 15, notes: "" });
         }
       } catch (error) {
         console.error("Error setting up itinerary:", error);
@@ -223,6 +324,41 @@ export default function Home() {
     };
     setupTrip();
   }, []);
+
+  const persistTripMeta = (nextMeta, trip = activeTrip) => {
+    setTripMeta(nextMeta);
+    if (trip) localStorage.setItem(`wanderwise-trip-${trip.trip_id || trip.id}`, JSON.stringify(nextMeta));
+  };
+
+  const handleSelectTrip = (trip) => {
+    setActiveTrip(trip);
+    setAddedItems(new Set((trip.itinerary_items || []).map(item => item.sub_place_id)));
+    const savedMeta = JSON.parse(localStorage.getItem(`wanderwise-trip-${trip.trip_id || trip.id}`) || "null");
+    const duration = savedMeta?.duration || Math.max(1, Math.round((new Date(trip.end_date) - new Date(trip.start_date)) / 86400000) + 1);
+    setTripMeta({ title: trip.title, startDate: normalizeTripDate(trip.start_date), duration, notes: savedMeta?.notes || "" });
+    setSelectedDay(1);
+  };
+
+  const handleCreateTrip = async (event) => {
+    event.preventDefault();
+    const title = newTrip.title.trim() || "Untitled escape";
+    const payload = { user_id: DUMMY_USER_ID, title, start_date: newTrip.startDate, end_date: dateAfter(newTrip.startDate, newTrip.duration) };
+    setIsCreatingTrip(true);
+    try {
+      const { data } = await axios.post(`${API_URL}/trips`, payload);
+      setTrips(prev => [data, ...prev]);
+      setActiveTrip(data);
+      setAddedItems(new Set());
+      persistTripMeta({ title, startDate: newTrip.startDate, duration: Number(newTrip.duration), notes: "" }, data);
+      setIsCreatingTrip(false);
+      setShowNewTrip(false);
+      setNewTrip({ title: "", startDate: newTrip.startDate, duration: 5 });
+    } catch (error) {
+      console.error("Error creating trip:", error);
+      setIsCreatingTrip(false);
+      alert("Could not create a new trip right now.");
+    }
+  };
 
   const handleStateClick = async (state) => {
     if (selectedState?.id === state.id) return;
@@ -293,9 +429,9 @@ export default function Home() {
     const currentTripId = activeTrip.trip_id || activeTrip.id;
 
     try {
-      await axios.post(`${API_URL}/trips/${currentTripId}/items`, {
+      const { data: createdItem } = await axios.post(`${API_URL}/trips/${currentTripId}/items`, {
         sub_place_id: subPlace.id,
-        visit_date: "2026-10-05", 
+        visit_date: tripDays(tripMeta.startDate, tripMeta.duration)[selectedDay - 1]?.date || tripMeta.startDate,
         notes: `Exploring ${subPlace.name}`
       });
       
@@ -306,18 +442,54 @@ export default function Home() {
         itinerary_items: [
           ...(prev.itinerary_items || []),
           {
-            item_id: Date.now(), 
+            item_id: createdItem?.id || Date.now(), 
             sub_place_id: subPlace.id,
             name: subPlace.name,
             category: subPlace.category,
             distance_km: subPlace.distance_from_primary_km || subPlace.distance_km,
-            notes: `Exploring ${subPlace.name}`
+            notes: `Exploring ${subPlace.name}`,
+            day: selectedDay,
+            lat: subPlace.lat,
+            lng: subPlace.lng,
+            visit_date: tripDays(tripMeta.startDate, tripMeta.duration)[selectedDay - 1]?.date || tripMeta.startDate
           }
         ]
       }));
     } catch (error) {
       console.error("Error adding to trip:", error);
       alert("Failed to add place to trip.");
+    }
+  };
+
+  const handleMoveTripItem = async (item, day) => {
+    const nextDay = Number(day);
+    const visitDate = activeTripDays[nextDay - 1]?.date || tripMeta.startDate;
+    const currentTripId = activeTrip.trip_id || activeTrip.id;
+    try {
+      await axios.patch(`${API_URL}/trips/${currentTripId}/items/${item.item_id}`, { visit_date: visitDate });
+      setActiveTrip(prev => ({
+        ...prev,
+        itinerary_items: (prev.itinerary_items || []).map(stop => stop.item_id === item.item_id ? { ...stop, day: nextDay, visit_date: visitDate } : stop)
+      }));
+    } catch (error) {
+      console.error("Error moving trip item:", error);
+      alert("Could not move this stop. Please try again.");
+    }
+  };
+
+  const handleRemoveTripItem = async (item) => {
+    const currentTripId = activeTrip.trip_id || activeTrip.id;
+    try {
+      await axios.delete(`${API_URL}/trips/${currentTripId}/items/${item.item_id}`);
+      setActiveTrip(prev => ({ ...prev, itinerary_items: (prev.itinerary_items || []).filter(stop => stop.item_id !== item.item_id) }));
+      setAddedItems(prev => {
+        const next = new Set(prev);
+        next.delete(item.sub_place_id);
+        return next;
+      });
+    } catch (error) {
+      console.error("Error removing trip item:", error);
+      alert("Could not remove this stop. Please try again.");
     }
   };
 
@@ -384,6 +556,8 @@ export default function Home() {
 
   const step = selectedPlace ? 4 : selectedDistrict ? 3 : selectedState ? 2 : 1;
   const scrollToJourney = () => document.getElementById("journey")?.scrollIntoView({ behavior: "smooth" });
+  const activeTripDays = tripDays(tripMeta.startDate, tripMeta.duration);
+  const activeDayStops = activeTrip?.itinerary_items?.filter(stop => dayForTripItem(stop, tripMeta.startDate) === selectedDay) || [];
 
   return (
     <main className="app-shell">
@@ -643,59 +817,53 @@ export default function Home() {
         )}
       </div>
 
-      {/* --- TRIP DASHBOARD MODAL --- */}
+      {/* --- TRIP PLANNER MODAL --- */}
       {isModalOpen && (
-        <div className="trip-modal fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
-          <div className="trip-dialog bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <div>
-                <h2 className="text-2xl font-black text-slate-800">{activeTrip?.title || "My Trip"}</h2>
-                <p className="text-slate-500 text-sm mt-1 font-medium">{activeTrip?.itinerary_items?.length || 0} stops planned</p>
-              </div>
-              <button 
-                onClick={() => setIsModalOpen(false)} 
-                className="text-slate-400 hover:text-slate-700 bg-white rounded-full w-8 h-8 flex items-center justify-center shadow-sm border border-slate-200 font-bold transition"
-              >
-                ✕
-              </button>
+        <div className="trip-modal fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+          <div className="trip-dialog w-full max-w-5xl max-h-[92vh] overflow-hidden flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="trip-planner-head">
+              <div><p className="eyebrow">Your travel desk</p><h2>Plan the days that stay with you.</h2><p>{activeTrip?.itinerary_items?.length || 0} stops across {tripMeta.duration} days</p></div>
+              <button aria-label="Close trip planner" onClick={() => setIsModalOpen(false)} className="trip-close">✕</button>
             </div>
-            <div className="p-6 overflow-y-auto flex-1 bg-slate-50/50">
-              {(!activeTrip?.itinerary_items || activeTrip.itinerary_items.length === 0) ? (
-                    <div className="text-center py-12 text-slate-500">Your trail is quiet for now. Save a place worth waking up for.</div>
-              ) : (
-                <div className="space-y-4">
-                  {activeTrip.itinerary_items.map((stop, i) => (
-                    <div key={stop.item_id || i} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-start gap-4 hover:shadow-md transition text-slate-800">
-                      <div className="bg-indigo-100 text-indigo-700 font-bold h-10 w-10 rounded-full flex items-center justify-center shrink-0">
-                        {i + 1}
-                      </div>
-                      <div className="w-full">
-                        <div className="flex justify-between items-start">
-                          <h4 className="font-bold text-slate-800 text-lg">{stop.name}</h4>
-                          {stop.distance_km && <span className="text-xs font-bold text-slate-400">{stop.distance_km} km away</span>}
-                        </div>
-                        <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider bg-indigo-50 px-2 py-1 rounded mt-1 inline-block">
-                          {stop.category?.replace('_', ' ')}
-                        </span>
-                        {stop.notes && (
-                          <div className="mt-3 p-3 bg-slate-50 rounded-lg text-sm text-slate-600 flex gap-2 border border-slate-100">
-                            <span>📝</span> {stop.notes}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+            <div className="trip-planner-body">
+              <aside className="trip-sidebar">
+                <div className="trip-sidebar-title"><span>Your trips</span><button type="button" onClick={() => setShowNewTrip(prev => !prev)} aria-label="Create a new trip">+</button></div>
+                {trips.map(trip => (
+                  <button key={trip.trip_id || trip.id} type="button" onClick={() => handleSelectTrip(trip)} className={`trip-list-item ${(activeTrip?.trip_id || activeTrip?.id) === (trip.trip_id || trip.id) ? "active" : ""}`}>
+                    <strong>{trip.title}</strong><span>{trip.start_date ? dateLabel(trip.start_date) : "Flexible dates"}</span>
+                  </button>
+                ))}
+                {showNewTrip && (
+                  <form className="new-trip-form" onSubmit={handleCreateTrip}>
+                    <label>Trip name<input required value={newTrip.title} onChange={e => setNewTrip({ ...newTrip, title: e.target.value })} placeholder="Monsoon in Kerala" /></label>
+                    <label>Starts<input type="date" value={newTrip.startDate} onChange={e => setNewTrip({ ...newTrip, startDate: e.target.value })} /></label>
+                    <label>Days<input type="number" min="1" max="30" value={newTrip.duration} onChange={e => setNewTrip({ ...newTrip, duration: e.target.value })} /></label>
+                    <button type="submit" disabled={isCreatingTrip}>{isCreatingTrip ? "Creating..." : "Create trip"}</button>
+                  </form>
+                )}
+              </aside>
+              <section className="trip-planner-content">
+                <div className="trip-details-grid">
+                  <label>Trip name<input value={tripMeta.title} onChange={e => persistTripMeta({ ...tripMeta, title: e.target.value })} /></label>
+                  <label>Start date<input type="date" value={tripMeta.startDate} onChange={e => persistTripMeta({ ...tripMeta, startDate: e.target.value })} /></label>
+                  <label>Number of days<input type="number" min="1" max="30" value={tripMeta.duration} onChange={e => persistTripMeta({ ...tripMeta, duration: e.target.value })} /></label>
                 </div>
-              )}
+                <label className="trip-notes">Planning notes<textarea value={tripMeta.notes} onChange={e => persistTripMeta({ ...tripMeta, notes: e.target.value })} placeholder="Add a hotel, food preference, permit reminder, or a promise to yourself..." /></label>
+                <div className="trip-route-summary" aria-live="polite">
+                  <div><span>ROUTE ESTIMATE</span><strong>{routeEstimate.loading ? "Calculating..." : routeEstimate.stops > 1 ? `${routeEstimate.distanceKm.toFixed(1)} km` : "Add 2 stops"}</strong><small>{routeEstimate.stops > 1 ? "between saved stops" : "to build a route"}</small></div>
+                  <div><span>DRIVING TIME</span><strong>{routeEstimate.loading ? "..." : routeEstimate.stops > 1 ? formatMinutes(routeEstimate.durationMinutes) : "--"}</strong><small>{routeEstimate.source || "No route yet"}</small></div>
+                  <div><span>PLANNED STOPS</span><strong>{routeEstimate.stops}</strong><small>{routeEstimate.source === "Mapbox driving route" ? "road route" : routeEstimate.stops > 1 ? "estimated route" : "saved locations"}</small></div>
+                </div>
+                <div className="day-tabs" role="tablist" aria-label="Trip days">
+                  {activeTripDays.map(({ day, date }) => <button key={date} type="button" onClick={() => setSelectedDay(day)} className={selectedDay === day ? "active" : ""}><span>DAY {day}</span><strong>{dateLabel(date)}</strong></button>)}
+                </div>
+                <div className="day-plan-head"><div><p className="eyebrow">{dateLabel(activeTripDays[selectedDay - 1]?.date || tripMeta.startDate)}</p><h3>Day {selectedDay} itinerary</h3></div><span>{activeDayStops.length} planned stop{activeDayStops.length === 1 ? "" : "s"}</span></div>
+                {activeDayStops.length === 0 ? <div className="day-empty"><span>✦</span><strong>A blank page for a good day.</strong><p>Save places from the discovery area, then assign them to this day.</p></div> : (
+                  <div className="day-stop-list">{activeDayStops.map((stop, index) => <div key={stop.item_id || `${stop.name}-${index}`} className="day-stop"><span className="day-stop-number">{String(index + 1).padStart(2, "0")}</span><div><strong>{stop.name}</strong><span>{stop.category?.replaceAll("_", " ") || "Local stop"} {stop.distance_km ? `· ${stop.distance_km} km` : ""}</span></div><div className="day-stop-actions"><span className="day-stop-time">{index === 0 ? "Morning" : index === 1 ? "Afternoon" : "Evening"}</span><select aria-label={`Move ${stop.name} to another day`} value={dayForTripItem(stop, tripMeta.startDate)} onChange={event => handleMoveTripItem(stop, event.target.value)}>{activeTripDays.map(({ day }) => <option key={day} value={day}>Day {day}</option>)}</select><button type="button" aria-label={`Remove ${stop.name} from trip`} onClick={() => handleRemoveTripItem(stop)}>Remove</button></div></div>)}</div>
+                )}
+              </section>
             </div>
-            <div className="p-6 border-t border-slate-100 bg-white flex justify-end">
-                <button 
-                  className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-800 transition shadow-md" 
-                  onClick={() => setIsModalOpen(false)}
-                >
-                  Keep wandering
-                </button>
-            </div>
+            <div className="trip-planner-foot"><span>Stops are added to the selected day when you save them.</span><button type="button" onClick={() => setIsModalOpen(false)}>Back to discovery ↗</button></div>
           </div>
         </div>
       )}
