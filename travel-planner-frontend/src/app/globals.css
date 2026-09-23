@@ -106,6 +106,10 @@ em { color: var(--orange); font-style: normal; }
 .place-content { display: grid; gap: 7px; }
 .place-content strong { font-family: Georgia, serif; font-size: 23px; font-weight: 400; }
 .place-content span { color: var(--muted); font-size: 12px; line-height: 1.55; }
+.place-season { display: grid; gap: 3px; margin-top: 6px; padding: 8px 10px; border: 1px solid rgba(237, 160, 110, 0.28); border-radius: 8px; background: rgba(236, 148, 96, 0.08); }
+.place-season em { color: #f0b789; font-style: normal; font-size: 8px; letter-spacing: .12em; text-transform: uppercase; }
+.place-season b { color: #fff7f3; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+.place-season small { color: #dfeadf; font-size: 11px; line-height: 1.5; }
 .place-details { display: grid; gap: 28px; justify-items: end; color: var(--orange); font-size: 10px; font-weight: 800; white-space: nowrap; }
 .place-details span:first-child { color: var(--muted); font-size: 9px; font-weight: 400; }
 .loading-row, .empty-state { padding: 35px; color: var(--muted); text-align: center; font-size: 13px; }
@@ -135,6 +139,38 @@ em { color: var(--orange); font-style: normal; }
 .distance { color: #aac0b0; font-size: 10px; }
 .subplace-card h4 { margin: 15px 0 7px; font-family: Georgia, serif; font-size: 21px; font-weight: 400; }
 .subplace-card p { min-height: 39px; margin: 0 0 22px; color: #b9cdbd; font-size: 12px; line-height: 1.6; }
+.subplace-season {
+  display: grid;
+  gap: 5px;
+  padding: 11px 12px;
+  border: 1px solid rgba(248, 191, 146, 0.42);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(244, 171, 109, 0.17), rgba(255, 255, 255, 0.05));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 18px rgba(13, 26, 20, 0.18);
+  color: #f7d3b7;
+}
+.subplace-season strong {
+  color: #fff7f0;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.subplace-season span {
+  color: #ebf3eb;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.season-label {
+  display: inline-flex;
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f5c194;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
 .subplace-footer { padding-top: 14px; border-top: 1px solid #ffffff18; color: #e6b28d; font-size: 12px; }
 .subplace-footer button { padding: 7px 10px; border: 1px solid #ffffff2d; border-radius: 3px; background: transparent; color: #fff; cursor: pointer; font-size: 10px; }
 .empty-state-dark { color: #b9cdbd; }
@@ -282,8 +318,13 @@ button { -webkit-tap-highlight-color: transparent; }
 .map-frame .mapboxgl-ctrl-top-right { top: 72px; }
 .map-frame .mapboxgl-ctrl-group { border: 0; overflow: hidden; border-radius: 5px; box-shadow: 0 7px 18px #061d1766; }
 .map-frame .mapboxgl-ctrl-group button { background-color: #10251fcc; }
-.map-marker { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0; border: 2px solid #8cbbff; border-radius: 50%; background: #152f3a; color: #fff; cursor: pointer; box-shadow: 0 5px 14px #061d1788; transition: transform .2s, background .2s, border-color .2s; }
-.map-marker:hover, .map-marker.is-active { border-color: #f3b08d; background: #d97951; transform: scale(1.18); }
+.map-marker { --marker-accent: #8cbbff; --marker-bg: rgba(21, 47, 58, 0.96); display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0; border: 2px solid var(--marker-accent); border-radius: 50%; background: var(--marker-bg); color: #fff; cursor: pointer; box-shadow: 0 5px 14px #061d1788; transition: transform .2s, background .2s, border-color .2s; }
+.map-marker:hover, .map-marker.is-active { border-color: #f3b08d; background: rgba(217, 121, 81, 0.94); transform: scale(1.18); }
+.map-marker-icon { display: inline-flex; font-size: 13px; line-height: 1; }
+.map-marker[data-category="hidden_gem"] { --marker-accent: #8de7c5; --marker-bg: rgba(16, 62, 50, 0.95); }
+.map-marker[data-category="cafe_restaurant"] { --marker-accent: #f5c26b; --marker-bg: rgba(68, 48, 14, 0.95); }
+.map-marker[data-category="viewpoint"] { --marker-accent: #bca3ff; --marker-bg: rgba(29, 23, 49, 0.95); }
+.map-marker[data-category="cultural"] { --marker-accent: #7cc5ff; --marker-bg: rgba(18, 39, 56, 0.95); }
 .map-spot-card { position: absolute; z-index: 4; right: 14px; bottom: 14px; left: 14px; display: grid; grid-template-columns: 104px 1fr; overflow: hidden; border: 1px solid #ffffff2e; border-radius: 8px; background: #10251fee; box-shadow: 0 16px 32px #061d1766; color: #fff; backdrop-filter: blur(15px); animation: rise .25s ease both; }
 .map-spot-image { min-height: 155px; background-position: center; background-size: cover; }
 .map-spot-body { position: relative; padding: 15px 17px 13px; }

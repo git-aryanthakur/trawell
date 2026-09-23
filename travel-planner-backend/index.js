@@ -52,35 +52,70 @@ app.get('/api/districts/:districtId/places', async (req, res) => {
 app.get('/api/places/:placeId/subplaces', async (req, res) => {
     try {
         const { placeId } = req.params;
-        
-        // This single query groups everything by category and sorts by distance
+
         const query = `
+            WITH review_seasons AS (
+                SELECT
+                    sub_place_id,
+                    COUNT(*) AS total_reviews,
+                    SUM(CASE WHEN LOWER(comment) ~ '(winter|december|january|february|snow|cold weather)' THEN 1 ELSE 0 END) AS winter_reviews,
+                    SUM(CASE WHEN LOWER(comment) ~ '(spring|march|april|may|pleasant weather|bloom|fresh air)' THEN 1 ELSE 0 END) AS spring_reviews,
+                    SUM(CASE WHEN LOWER(comment) ~ '(summer|june|july|august|sunny|heat|summer vacation|peak season)' THEN 1 ELSE 0 END) AS summer_reviews,
+                    SUM(CASE WHEN LOWER(comment) ~ '(monsoon|rain|rainy season|lush|waterfall|mist|cloudy)' THEN 1 ELSE 0 END) AS monsoon_reviews,
+                    SUM(CASE WHEN LOWER(comment) ~ '(autumn|september|october|november|golden|cooler weather|fall)' THEN 1 ELSE 0 END) AS autumn_reviews
+                FROM reviews
+                GROUP BY sub_place_id
+            )
             SELECT 
-                category,
+                sp.category,
                 json_agg(
                     json_build_object(
-                        'id', id,
-                        'name', name,
-                        'distance_km', distance_from_primary_km,
-                        'cheap_vibe_score', cheap_vibe_score,
-                        'description', description,
-                        'lat', lat,
-                        'lng', lng
-                    ) ORDER BY distance_from_primary_km ASC
+                        'id', sp.id,
+                        'name', sp.name,
+                        'distance_km', sp.distance_from_primary_km,
+                        'cheap_vibe_score', sp.cheap_vibe_score,
+                        'description', sp.description,
+                        'lat', sp.lat,
+                        'lng', sp.lng,
+                        'review_count', COALESCE(rs.total_reviews, 0),
+                        'best_season', CASE
+                            WHEN COALESCE(rs.monsoon_reviews, 0) >= COALESCE(rs.spring_reviews, 0)
+                             AND COALESCE(rs.monsoon_reviews, 0) >= COALESCE(rs.summer_reviews, 0)
+                             AND COALESCE(rs.monsoon_reviews, 0) >= COALESCE(rs.autumn_reviews, 0)
+                             AND COALESCE(rs.monsoon_reviews, 0) >= COALESCE(rs.winter_reviews, 0) THEN 'Monsoon'
+                            WHEN COALESCE(rs.summer_reviews, 0) >= COALESCE(rs.spring_reviews, 0)
+                             AND COALESCE(rs.summer_reviews, 0) >= COALESCE(rs.autumn_reviews, 0)
+                             AND COALESCE(rs.summer_reviews, 0) >= COALESCE(rs.winter_reviews, 0)
+                             AND COALESCE(rs.summer_reviews, 0) >= COALESCE(rs.monsoon_reviews, 0) THEN 'Summer'
+                            WHEN COALESCE(rs.spring_reviews, 0) >= COALESCE(rs.summer_reviews, 0)
+                             AND COALESCE(rs.spring_reviews, 0) >= COALESCE(rs.autumn_reviews, 0)
+                             AND COALESCE(rs.spring_reviews, 0) >= COALESCE(rs.winter_reviews, 0)
+                             AND COALESCE(rs.spring_reviews, 0) >= COALESCE(rs.monsoon_reviews, 0) THEN 'Spring'
+                            WHEN COALESCE(rs.autumn_reviews, 0) >= COALESCE(rs.spring_reviews, 0)
+                             AND COALESCE(rs.autumn_reviews, 0) >= COALESCE(rs.summer_reviews, 0)
+                             AND COALESCE(rs.autumn_reviews, 0) >= COALESCE(rs.winter_reviews, 0)
+                             AND COALESCE(rs.autumn_reviews, 0) >= COALESCE(rs.monsoon_reviews, 0) THEN 'Autumn'
+                            WHEN COALESCE(rs.winter_reviews, 0) >= COALESCE(rs.spring_reviews, 0)
+                             AND COALESCE(rs.winter_reviews, 0) >= COALESCE(rs.summer_reviews, 0)
+                             AND COALESCE(rs.winter_reviews, 0) >= COALESCE(rs.autumn_reviews, 0)
+                             AND COALESCE(rs.winter_reviews, 0) >= COALESCE(rs.monsoon_reviews, 0) THEN 'Winter'
+                            ELSE 'Spring'
+                        END
+                    ) ORDER BY sp.distance_from_primary_km ASC
                 ) AS items
-            FROM sub_places
-            WHERE primary_place_id = $1
-            GROUP BY category;
+            FROM sub_places sp
+            LEFT JOIN review_seasons rs ON rs.sub_place_id = sp.id
+            WHERE sp.primary_place_id = $1
+            GROUP BY sp.category;
         `;
-        
+
         const result = await pool.query(query, [placeId]);
-        
-        // Transform the SQL result into a clean JSON object for the frontend
+
         const categorizedResponse = {};
         result.rows.forEach(row => {
             categorizedResponse[row.category.toLowerCase()] = row.items;
         });
-        
+
         res.json(categorizedResponse);
     } catch (err) {
         console.error(err.message);

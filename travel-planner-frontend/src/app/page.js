@@ -18,6 +18,13 @@ const categories = [
   { key: "cultural", label: "Culture", icon: "⌂", tone: "sky" },
 ];
 
+const mapCategoryMeta = {
+  hidden_gem: { icon: "✦", accent: "#8de7c5", background: "rgba(16, 62, 50, 0.95)" },
+  cafe_restaurant: { icon: "☕", accent: "#f5c26b", background: "rgba(68, 48, 14, 0.95)" },
+  viewpoint: { icon: "◉", accent: "#bca3ff", background: "rgba(29, 23, 49, 0.95)" },
+  cultural: { icon: "⌂", accent: "#7cc5ff", background: "rgba(18, 39, 56, 0.95)" },
+};
+
 const travelImages = [
   "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=900&q=85",
   "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=900&q=85",
@@ -119,6 +126,65 @@ function imageForPlace(index, place, context = "") {
 function entityImage(index, entity, context = "") {
   const apiImage = entity?.image_url || entity?.photo_url || entity?.image || entity?.photo || entity?.thumbnail || entity?.cover_image;
   return apiImage || imageForPlace(index, entity, context);
+}
+
+function bestTimeToVisitText(item, contextPlaceName = "") {
+  const name = item?.name || "this stop";
+  const placeContext = contextPlaceName || "the valley";
+  const haystack = `${name} ${item?.description || ""} ${placeContext}`.toLowerCase();
+  const reviewSeason = item?.best_season || item?.preferred_season || item?.reviewed_in;
+  const reviewCount = Number(item?.review_count || 0);
+
+  const seasonalNotes = {
+    Spring: `Spring is the crowd favorite for ${name} — fresh air, lively trails, and easy days to explore.`,
+    Summer: `Summer gets the most love for ${name} — warm weather, clear roads, and easy afternoons outdoors.`,
+    Autumn: `Autumn is the sweet spot for ${name} — golden light, cooler weather, and the best photo moments.`,
+    Winter: `Winter is when travelers keep returning to ${name} — calm views, quiet vibes, and a cozy mountain feel.`,
+    Monsoon: `Monsoon is the dramatic pick for ${name} — lush skies, full waterfalls, and a cinematic mood.`
+  };
+
+  const seasonLookup = reviewSeason && seasonalNotes[reviewSeason] ? reviewSeason : null;
+
+  if (haystack.includes("waterfall") || haystack.includes("river") || haystack.includes("falls") || haystack.includes("stream")) {
+    return {
+      season: "Monsoon",
+      line: `Best time: Monsoon for ${name} — travelers keep coming here when the falls are fullest and the valley feels alive.`
+    };
+  }
+
+  if (haystack.includes("cafe") || haystack.includes("coffee") || haystack.includes("bakery") || haystack.includes("restaurant") || haystack.includes("eat")) {
+    return {
+      season: seasonLookup || "Autumn",
+      line: `Best time: ${seasonLookup || "Autumn"} for ${name} — ${seasonalNotes[seasonLookup || "Autumn"]?.replace(`${name} `, "") || "golden light and cozy café hours make the experience best."}`
+    };
+  }
+
+  if (haystack.includes("view") || haystack.includes("sunset") || haystack.includes("peak") || haystack.includes("ridge") || haystack.includes("mountain")) {
+    return {
+      season: seasonLookup || "Spring",
+      line: `Best time: ${seasonLookup || "Spring"} for ${name} — ${seasonalNotes[seasonLookup || "Spring"].replace(`${name} `, "")}`
+    };
+  }
+
+  if (haystack.includes("forest") || haystack.includes("trail") || haystack.includes("trek") || haystack.includes("village")) {
+    return {
+      season: seasonLookup || "Summer",
+      line: `Best time: ${seasonLookup || "Summer"} for ${name} — ${seasonalNotes[seasonLookup || "Summer"].replace(`${name} `, "")}`
+    };
+  }
+
+  if (seasonLookup) {
+    return {
+      season: seasonLookup,
+      line: `Best time: ${seasonLookup} for ${name} — ${seasonalNotes[seasonLookup].replace(`${name} `, "")}${reviewCount ? ` Based on ${reviewCount} recent traveler review${reviewCount > 1 ? "s" : ""}.` : ""}`
+    };
+  }
+
+  const fallbackSeason = ["Spring", "Autumn", "Summer", "Winter"][Math.abs(name.length + placeContext.length) % 4];
+  return {
+    season: fallbackSeason,
+    line: `Best time: ${fallbackSeason} for ${name} — ${seasonalNotes[fallbackSeason].replace(`${name} `, "")}`
+  };
 }
 
 function Spinner({ light = false }) {
@@ -753,14 +819,25 @@ export default function Home() {
               <div className="empty-state">This trail is still being written. Try another district.</div>
             ) : (
               <div className="place-grid">
-                {places.map((place, index) => (
-                  <button key={place.id} onClick={() => handlePlaceClick(place)} className={`place-card ${selectedPlace?.id === place.id ? "is-selected" : ""}`}>
-                    <span className="place-image" style={{ backgroundImage: `url(${imageForPlace(index + 2, place, `${selectedDistrict.name} ${selectedPlace?.name || ""}`)})` }}><video autoPlay muted loop playsInline preload="metadata" poster={imageForPlace(index + 2, place, selectedDistrict.name)}><source src={videoFor(index + 2)} type="video/mp4" /></video></span>
-                    <span className="place-number">0{index + 1}</span>
-                    <span className="place-content"><strong>{place.name}</strong><span>{place.description}</span></span>
-                    <span className="place-details"><span>✦ Local pick</span><span>{selectedPlace?.id === place.id ? "Selected ✓" : "Explore →"}</span></span>
-                  </button>
-                ))}
+                {places.map((place, index) => {
+                  const placeBestTime = bestTimeToVisitText({ name: place.name, description: place.description }, selectedDistrict?.name || "this region");
+                  return (
+                    <button key={place.id} onClick={() => handlePlaceClick(place)} className={`place-card ${selectedPlace?.id === place.id ? "is-selected" : ""}`}>
+                      <span className="place-image" style={{ backgroundImage: `url(${imageForPlace(index + 2, place, `${selectedDistrict.name} ${selectedPlace?.name || ""}`)})` }}><video autoPlay muted loop playsInline preload="metadata" poster={imageForPlace(index + 2, place, selectedDistrict.name)}><source src={videoFor(index + 2)} type="video/mp4" /></video></span>
+                      <span className="place-number">0{index + 1}</span>
+                      <span className="place-content">
+                        <strong>{place.name}</strong>
+                        <span>{place.description}</span>
+                        <span className="place-season mini">
+                          <em>Best time</em>
+                          <b>{placeBestTime.season}</b>
+                          <small>{placeBestTime.line.replace(`Best time: ${placeBestTime.season} for ${place.name} — `, "")}</small>
+                        </span>
+                      </span>
+                      <span className="place-details"><span>✦ Local pick</span><span>{selectedPlace?.id === place.id ? "Selected ✓" : "Explore →"}</span></span>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </section>
@@ -789,6 +866,7 @@ export default function Home() {
                   <div className="subplace-grid grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                     {subplaces[activeTab]?.map((item, index) => {
                       const isAdded = addedItems.has(item.id);
+                      const itemBestTime = bestTimeToVisitText(item, selectedPlace?.name);
                       return (
                         <article key={item.id} className="subplace-card bg-[#111] border border-white/10 p-5 rounded-2xl flex flex-col justify-between">
                           <div className="subplace-image h-32 rounded-xl mb-4" style={{ backgroundImage: `url(${entityImage(index + 3, item, `${selectedDistrict?.name || ""} ${selectedPlace?.name || ""}`)})`, backgroundSize: 'cover', backgroundPosition: 'center' }}><video autoPlay muted loop playsInline preload="metadata" poster={entityImage(index + 3, item, `${selectedDistrict?.name || ""} ${selectedPlace?.name || ""}`)}><source src={videoFor(index + 3)} type="video/mp4" /></video></div>
@@ -796,7 +874,12 @@ export default function Home() {
                             <div><span className="subplace-index">0{index + 1} / {categories.find(c => c.key === activeTab)?.label}</span><h4 className="text-white font-bold text-lg">{item.name}</h4></div>
                             <span className="distance-chip">{item.distance_km} km</span>
                           </div>
-                          <p className="text-white/60 text-sm mb-4 line-clamp-2">{item.description}</p>
+                          <p className="text-white/60 text-sm mb-3 line-clamp-2">{item.description}</p>
+                          <div className="subplace-season mb-4">
+                            <span className="season-label">Best time</span>
+                            <strong>{itemBestTime.season}</strong>
+                            <span>{itemBestTime.line.replace(`Best time: ${itemBestTime.season} for ${item.name} — `, "")}</span>
+                          </div>
                           
                           <div className="flex items-center justify-between pt-3 border-t border-white/10 mt-auto">
                             <button 
@@ -848,18 +931,26 @@ export default function Home() {
                         </div>
                       </Marker>
 
-                      {subplaces[activeTab]?.map((item) => (
-                        item.lat && item.lng && (
-                          <Marker key={item.id} longitude={Number(item.lng)} latitude={Number(item.lat)}>
-                            <button type="button" aria-label={`Show details for ${item.name}`} onClick={() => handleMapSpotClick(item)} className={`map-marker ${selectedMapSpot?.id === item.id ? "is-active" : ""}`}>
-                              <span className="text-sm">{categories.find(c => c.key === activeTab)?.icon || '📍'}</span>
+                      {categories.flatMap(({ key }) => (subplaces[key] || []).map((item) => {
+                        const meta = mapCategoryMeta[key] || mapCategoryMeta.hidden_gem;
+                        return item.lat && item.lng ? (
+                          <Marker key={`${key}-${item.id}`} longitude={Number(item.lng)} latitude={Number(item.lat)}>
+                            <button
+                              type="button"
+                              aria-label={`Show details for ${item.name}`}
+                              onClick={() => handleMapSpotClick(item)}
+                              className={`map-marker ${selectedMapSpot?.id === item.id ? "is-active" : ""}`}
+                              data-category={key}
+                              style={{ "--marker-accent": meta.accent, "--marker-bg": meta.background }}
+                            >
+                              <span className="map-marker-icon">{meta.icon}</span>
                               <div className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-white text-slate-900 text-xs font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none shadow-xl">
                                 {item.name}
                               </div>
                             </button>
                           </Marker>
-                        )
-                      ))}
+                        ) : null;
+                      }))}
                     </Map>
                   )}
                   {selectedMapSpot && (
