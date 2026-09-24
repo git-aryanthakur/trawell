@@ -726,6 +726,12 @@ export default function Home() {
       </header>
 
       <section className="hero">
+        <aside className="travel-rail" aria-label="Wanderwise trail navigation">
+          <span className="rail-mark">✦</span>
+          <span className="rail-label">India · field notes</span>
+          <span className="rail-line" />
+          <span className="rail-scroll">Scroll to wander <b>↓</b></span>
+        </aside>
         <div className="hero-scene" aria-hidden="true">
           <video
             className="hero-video"
@@ -741,10 +747,10 @@ export default function Home() {
           <div className="hero-stars" aria-hidden="true" />
         </div>
         <div className="hero-content">
-          <div className="hero-kicker"><span className="pulse-ring" /> A field guide for curious souls</div>
-          <h1>Somewhere<br /><em>beautiful is waiting.</em></h1>
-          <p className="hero-copy">“The best journeys answer questions you never thought to ask.” Let the road lead you through Himachal&apos;s quiet valleys, warm kitchens, and wild views.</p>
-          <button className="hero-cta" onClick={scrollToJourney}>Find my somewhere <span>↗</span></button>
+          <div className="hero-kicker"><span className="pulse-ring" /> Wanderwise / 01 — 04</div>
+          <h1>Go where<br /><em>the map gets quiet.</em></h1>
+          <p className="hero-copy">A field guide to the places that do not ask to be found. Follow the feeling through quiet valleys, warm kitchens, and wild views.</p>
+          <button className="hero-cta" onClick={scrollToJourney}>Begin the detour <span>↗</span></button>
           <div className="hero-stats">
             <span><strong>01</strong> Choose a region</span>
             <span><strong>02</strong> Follow your curiosity</span>
