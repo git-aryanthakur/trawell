@@ -77,6 +77,10 @@ app.get('/api/places/:placeId/subplaces', async (req, res) => {
                         'description', sp.description,
                         'lat', sp.lat,
                         'lng', sp.lng,
+                        'requires_permit', sp.requires_permit,
+                        'permit_fee_indian', sp.permit_fee_indian,
+                        'permit_fee_foreigner', sp.permit_fee_foreigner,
+                        'permit_details', sp.permit_details,
                         'review_count', COALESCE(rs.total_reviews, 0),
                         'best_season', CASE
                             WHEN COALESCE(rs.monsoon_reviews, 0) >= COALESCE(rs.spring_reviews, 0)

@@ -893,6 +893,11 @@ export default function Home() {
                             <span className="distance-chip">{item.distance_km} km</span>
                           </div>
                           <p className="text-white/60 text-sm mb-3 line-clamp-2">{item.description}</p>
+                          {permitData(item) && <div className="subplace-permit" role="note">
+                            <strong>⚠ Travel permit required</strong>
+                            <span>{permitData(item).details}</span>
+                            <small>Indian: {permitData(item).indianFee} · Foreign: {permitData(item).foreignFee}</small>
+                          </div>}
                           {itemBestTime && <div className="subplace-season mb-4">
                             <span className="season-label">Best time</span>
                             <strong>{itemBestTime.season}</strong>

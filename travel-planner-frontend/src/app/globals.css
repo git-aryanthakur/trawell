@@ -296,6 +296,9 @@ button { -webkit-tap-highlight-color: transparent; }
 .subplace-image { height: 145px !important; margin-bottom: 17px !important; border-radius: 6px; }
 .explore-panel .subplace-card h4 { font-size: 22px; }
 .explore-panel .subplace-card p { color: #b9cdbd; }
+.subplace-permit { display: grid; gap: 4px; margin: 0 0 14px; padding: 9px 10px; border: 1px solid #d9785a; border-radius: 8px; background: #3b201b; color: #fff1e8; }
+.subplace-permit strong { color: #ffc0a3; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+.subplace-permit span, .subplace-permit small { color: #f4d8ca; font-size: 10px; line-height: 1.4; }
 .explore-panel .subplace-card button { border-radius: 999px; }
 .map-frame { min-height: 600px; border: 1px solid #ffffff24 !important; border-radius: 10px !important; box-shadow: 0 18px 35px #061d1740 !important; }
 .footer { width: min(1180px, calc(100% - 64px)); padding: 28px 0 45px; border-top: 1px solid var(--line); }
