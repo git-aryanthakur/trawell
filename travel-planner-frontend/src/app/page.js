@@ -128,63 +128,49 @@ function entityImage(index, entity, context = "") {
   return apiImage || imageForPlace(index, entity, context);
 }
 
+function permitData(place) {
+  const required = place?.requires_permit ?? place?.permit_required ?? place?.ilp_required;
+  if (!required) return null;
+
+  return {
+    details: place.permit_details || place.permit_name || "Check the local authority requirements before travelling.",
+    indianFee: place.permit_fee_indian ?? place.permit_amount_indian ?? "See authority",
+    foreignFee: place.permit_fee_foreigner ?? place.permit_amount_foreign ?? "See authority"
+  };
+}
+
+const researchedSeasonGuides = [
+  { match: /amarnath/, season: "July to August", reason: "The annual pilgrimage window is set by the shrine board and the high route is open only seasonally." },
+  { match: /valley of flowers|hemkund/, season: "July to September", reason: "The alpine trail and wildflower meadows are accessible in the short summer window." },
+  { match: /gulmarg/, season: "December to March", reason: "This is the reliable snow and skiing season; April to June is better for green meadows." },
+  { match: /auli/, season: "January to March", reason: "Winter gives Auli its ski conditions; April to June is clearer for views without snow." },
+  { match: /badrinath|kedarnath|gangotri|yamunotri/, season: "May to June and September to October", reason: "The pilgrimage roads and high-altitude shrines are most accessible in the pre-monsoon and post-monsoon windows." },
+  { match: /chitkul|kalpa/, season: "April to June and September to October", reason: "Road access, clear mountain views, and comfortable daytime temperatures are strongest in these months." },
+  { match: /kaza|keylong/, season: "May to October", reason: "The high-altitude roads are generally most accessible after winter and before heavy snowfall." },
+  { match: /spiti|kinnaur/, season: "April to June and September to October", reason: "These shoulder seasons balance open roads, clear skies, and manageable temperatures." },
+  { match: /pahalgam|sonamarg|gurez/, season: "May to October", reason: "The valleys are most accessible after snowmelt and before the winter closure." },
+  { match: /dharamshala|mcleod|kangra|palampur|bir billing/, season: "March to June and September to November", reason: "Spring, autumn, and the clear post-monsoon period offer the best combination of weather and visibility." },
+  { match: /dalhousie|khajjiar|chamba|manali|kasol|barot|prashar|narkanda|kasauli|shimla|nahan/, season: "March to June and September to November", reason: "The hill stations are clearest and most comfortable before the monsoon and after the rains." },
+  { match: /uttarakhand|mussoorie|nainital|almora|ranikhet|kausani|munsiyari|chopta|lansdowne|chakrata|uttarkashi|chamoli|rudraprayag|tehri|pauri|pithoragarh|bageshwar|dehradun|haridwar|udham|champawat/, season: "March to June and September to November", reason: "These months generally provide the clearest roads, pleasant temperatures, and better mountain visibility." },
+  { match: /jammu|kashmir|pahalgam|srinagar|sonamarg|gurez|doodhpathri|yusmarg|bangus|patnitop|anantnag|bandipora|baramulla|budgam|ganderbal|kupwara|pulwama|shopian|udhampur|reasi/, season: "April to June and September to November", reason: "Spring and autumn bring clearer skies and easier access than the peak winter and monsoon periods." },
+  { match: /himachal|lahaul|kullu|mandi|sirmaur|solan|una|bilaspur|hamirpur/, season: "March to June and September to November", reason: "The most dependable travel conditions are in spring, early summer, and the post-monsoon autumn period." }
+];
+
 function bestTimeToVisitText(item, contextPlaceName = "") {
   const name = item?.name || "this stop";
-  const placeContext = contextPlaceName || "the valley";
-  const haystack = `${name} ${item?.description || ""} ${placeContext}`.toLowerCase();
+  const haystack = `${name} ${contextPlaceName}`.toLowerCase();
   const reviewSeason = item?.best_season || item?.preferred_season || item?.reviewed_in;
-  const reviewCount = Number(item?.review_count || 0);
+  const researchedGuide = researchedSeasonGuides.find(({ match }) => match.test(haystack));
 
-  const seasonalNotes = {
-    Spring: `Spring is the crowd favorite for ${name} — fresh air, lively trails, and easy days to explore.`,
-    Summer: `Summer gets the most love for ${name} — warm weather, clear roads, and easy afternoons outdoors.`,
-    Autumn: `Autumn is the sweet spot for ${name} — golden light, cooler weather, and the best photo moments.`,
-    Winter: `Winter is when travelers keep returning to ${name} — calm views, quiet vibes, and a cozy mountain feel.`,
-    Monsoon: `Monsoon is the dramatic pick for ${name} — lush skies, full waterfalls, and a cinematic mood.`
-  };
-
-  const seasonLookup = reviewSeason && seasonalNotes[reviewSeason] ? reviewSeason : null;
-
-  if (haystack.includes("waterfall") || haystack.includes("river") || haystack.includes("falls") || haystack.includes("stream")) {
-    return {
-      season: "Monsoon",
-      line: `Best time: Monsoon for ${name} — travelers keep coming here when the falls are fullest and the valley feels alive.`
-    };
+  if (researchedGuide) {
+    return { season: researchedGuide.season, line: `Best time: ${researchedGuide.season} for ${name} — ${researchedGuide.reason}` };
   }
 
-  if (haystack.includes("cafe") || haystack.includes("coffee") || haystack.includes("bakery") || haystack.includes("restaurant") || haystack.includes("eat")) {
-    return {
-      season: seasonLookup || "Autumn",
-      line: `Best time: ${seasonLookup || "Autumn"} for ${name} — ${seasonalNotes[seasonLookup || "Autumn"]?.replace(`${name} `, "") || "golden light and cozy café hours make the experience best."}`
-    };
+  if (reviewSeason) {
+    return { season: reviewSeason, line: `Best time: ${reviewSeason} for ${name} — based on the available traveler-season data.` };
   }
 
-  if (haystack.includes("view") || haystack.includes("sunset") || haystack.includes("peak") || haystack.includes("ridge") || haystack.includes("mountain")) {
-    return {
-      season: seasonLookup || "Spring",
-      line: `Best time: ${seasonLookup || "Spring"} for ${name} — ${seasonalNotes[seasonLookup || "Spring"].replace(`${name} `, "")}`
-    };
-  }
-
-  if (haystack.includes("forest") || haystack.includes("trail") || haystack.includes("trek") || haystack.includes("village")) {
-    return {
-      season: seasonLookup || "Summer",
-      line: `Best time: ${seasonLookup || "Summer"} for ${name} — ${seasonalNotes[seasonLookup || "Summer"].replace(`${name} `, "")}`
-    };
-  }
-
-  if (seasonLookup) {
-    return {
-      season: seasonLookup,
-      line: `Best time: ${seasonLookup} for ${name} — ${seasonalNotes[seasonLookup].replace(`${name} `, "")}${reviewCount ? ` Based on ${reviewCount} recent traveler review${reviewCount > 1 ? "s" : ""}.` : ""}`
-    };
-  }
-
-  const fallbackSeason = ["Spring", "Autumn", "Summer", "Winter"][Math.abs(name.length + placeContext.length) % 4];
-  return {
-    season: fallbackSeason,
-    line: `Best time: ${fallbackSeason} for ${name} — ${seasonalNotes[fallbackSeason].replace(`${name} `, "")}`
-  };
+  return null;
 }
 
 function Spinner({ light = false }) {
@@ -841,6 +827,7 @@ export default function Home() {
               <div className="place-grid">
                 {places.map((place, index) => {
                   const placeBestTime = bestTimeToVisitText({ name: place.name, description: place.description }, selectedDistrict?.name || "this region");
+                  const placePermit = permitData(place);
                   return (
                     <button key={place.id} onClick={() => handlePlaceClick(place)} className={`place-card ${selectedPlace?.id === place.id ? "is-selected" : ""}`}>
                       <span className="place-image" style={{ backgroundImage: `url(${imageForPlace(index + 2, place, `${selectedDistrict.name} ${selectedPlace?.name || ""}`)})` }}><video autoPlay muted loop playsInline preload="metadata" poster={imageForPlace(index + 2, place, selectedDistrict.name)}><source src={videoFor(index + 2)} type="video/mp4" /></video></span>
@@ -848,11 +835,12 @@ export default function Home() {
                       <span className="place-content">
                         <strong>{place.name}</strong>
                         <span>{place.description}</span>
-                        <span className="place-season mini">
+                        {placePermit && <span className="permit-mini">⚠ Permit required</span>}
+                        {placeBestTime && <span className="place-season mini">
                           <em>Best time</em>
                           <b>{placeBestTime.season}</b>
                           <small>{placeBestTime.line.replace(`Best time: ${placeBestTime.season} for ${place.name} — `, "")}</small>
-                        </span>
+                        </span>}
                       </span>
                       <span className="place-details"><span>✦ Local pick</span><span>{selectedPlace?.id === place.id ? "Selected ✓" : "Explore →"}</span></span>
                     </button>
@@ -870,6 +858,10 @@ export default function Home() {
               <div><p className="eyebrow eyebrow-light">Your personal shortlist</p><h2>Worth the detour<span>.</span></h2><p>Little places, long memories, and the best reasons to linger in {selectedPlace.name}.</p></div>
               <div className="panel-badge">✦<span>EDITOR&apos;S<br />PICK</span></div>
             </div>
+            {permitData(selectedPlace) && <div className="permit-card" role="note">
+              <div className="permit-card-heading"><span className="permit-alert" aria-hidden="true">⚠</span><div><h3>Travel permit required</h3><p>{permitData(selectedPlace).details}</p></div></div>
+              <div className="permit-fees"><div><span>Indian nationals</span><strong>{permitData(selectedPlace).indianFee}</strong></div><div><span>Foreign nationals</span><strong>{permitData(selectedPlace).foreignFee}</strong></div></div>
+            </div>}
             
             {subplacesLoading ? <div className="loading-row loading-row-light"><Spinner light /> Collecting local whispers...</div> : !subplaces || Object.keys(subplaces).length === 0 ? (
               <div className="empty-state empty-state-dark">No field notes here yet. Be the first to leave one.</div>
@@ -895,11 +887,11 @@ export default function Home() {
                             <span className="distance-chip">{item.distance_km} km</span>
                           </div>
                           <p className="text-white/60 text-sm mb-3 line-clamp-2">{item.description}</p>
-                          <div className="subplace-season mb-4">
+                          {itemBestTime && <div className="subplace-season mb-4">
                             <span className="season-label">Best time</span>
                             <strong>{itemBestTime.season}</strong>
                             <span>{itemBestTime.line.replace(`Best time: ${itemBestTime.season} for ${item.name} — `, "")}</span>
-                          </div>
+                          </div>}
                           
                           <div className="flex items-center justify-between pt-3 border-t border-white/10 mt-auto">
                             <button 

@@ -263,6 +263,11 @@ button { -webkit-tap-highlight-color: transparent; }
 .place-image { width: 92px; height: 110px; border-radius: 5px; }
 .place-content strong { font-size: 25px; }
 .place-content span { color: #7a867f; }
+.permit-mini { display: inline-flex; width: fit-content; margin-top: 2px; padding: 4px 7px; border: 1px solid #e7a98f; border-radius: 999px; background: #fff0e8; color: #a64f35 !important; font-size: 9px !important; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.place-season { border-color: #356451; background: #183a30; box-shadow: 0 8px 16px #18342d22; }
+.place-season em { color: #f3b08d; }
+.place-season b { color: #fff8f0; }
+.place-season small { color: #d9e9dc; }
 .place-details { gap: 31px; color: var(--orange); }
 .loading-row, .empty-state { border: 1px dashed #cbd6ca; border-radius: 8px; background: #fafbf7; }
 .explore-panel { padding: 50px; border-radius: 12px; background: linear-gradient(105deg, #071d18d9 0%, #0d3026b8 48%, #10251f99 100%), url("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=2200&q=92") center / cover; box-shadow: 0 25px 65px #18382f2e; }
@@ -272,6 +277,15 @@ button { -webkit-tap-highlight-color: transparent; }
 .panel-heading h2 { font-size: clamp(39px, 4vw, 55px); }
 .panel-heading p:last-child { max-width: 430px; line-height: 1.6; }
 .panel-badge { width: 96px; height: 96px; background: #ffffff0a; }
+.permit-card { position: relative; z-index: 1; display: grid; gap: 14px; margin: 0 0 27px; padding: 15px 17px; border: 1px solid #efb49c; border-radius: 10px; background: #fff1e9; color: #2a332e; box-shadow: 0 12px 24px #061d1725; }
+.permit-card-heading { display: flex; gap: 11px; align-items: flex-start; }
+.permit-alert { display: grid; place-items: center; flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%; background: #d97951; color: #fff; font-size: 16px; }
+.permit-card h3 { margin: 0; color: #a64f35; font-size: 14px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.permit-card p { margin: 4px 0 0; color: #67483d; font-size: 12px; line-height: 1.5; }
+.permit-fees { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.permit-fees > div { display: grid; gap: 4px; padding: 9px 11px; border: 1px solid #f0cdbd; border-radius: 7px; background: #fffaf7; }
+.permit-fees span { color: #8a685b; font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.permit-fees strong { color: #2b4c3e; font-size: 14px; }
 .tab-row { gap: 9px; }
 .tab-row button { border-color: #ffffff32; border-radius: 999px; padding: 11px 15px; }
 .tab-row button:hover { border-color: var(--peach); color: #fff; }
@@ -590,6 +604,7 @@ button { -webkit-tap-highlight-color: transparent; }
   .trip-planner-head h2 { font-size: 36px; }
   .trip-sidebar { max-height: 34vh; padding: 20px 14px; }
   .trip-planner-content { padding: 24px 18px 26px; }
+  .permit-fees { grid-template-columns: 1fr; }
 }
 
 .theme-toggle { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #ffffff55; border-radius: 50%; background: #0b2d2488; color: #fff; cursor: pointer; font-size: 18px; line-height: 1; transition: transform .2s, background .2s, border-color .2s; }
@@ -729,4 +744,72 @@ html[data-theme="dark"] .progress-wrap { border: 0; background: transparent; box
   .journey-head h2 em:after { bottom: -4px; }
   .progress-wrap { margin-top: 22px; }
   html[data-theme="dark"] .journey-head { padding: 9px 0 24px; }
+}
+
+/* Soft editorial polish for the first review pass. */
+:root {
+  --apricot: #f5a27f;
+  --butter: #fff0c9;
+  --mint-wash: #edf5e9;
+  --ink-soft: #315247;
+}
+
+body { font-family: var(--font-geist-sans), Arial, sans-serif; }
+.app-shell { background: linear-gradient(180deg, #f7f3e9 0%, #eef4e9 100%); }
+.topbar { padding-top: 8px; }
+.brand { gap: 12px; }
+.brand-mark { width: 36px; height: 36px; border: 0; background: var(--apricot); box-shadow: 0 7px 18px #071d1835; }
+.topbar-nav { padding: 8px 13px; border: 1px solid #ffffff25; border-radius: 999px; background: #102d2550; backdrop-filter: blur(12px); }
+.theme-toggle { box-shadow: 0 7px 16px #071d1830; }
+.trip-button { box-shadow: 0 7px 16px #071d1828; }
+.hero-content { padding-top: 132px; }
+.hero h1 { max-width: 760px; }
+.hero-cta { box-shadow: 0 12px 25px #071d1838; }
+.hero-stats { gap: 34px; }
+.content-wrap { padding-top: 82px; }
+.content-wrap:before { background: linear-gradient(180deg, #eef5e9f2 0%, #f6f4ecf0 50%, #e9f2e6f4 100%), url("https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=2400&q=92") center / cover fixed; }
+.journey-head { padding-bottom: 31px; border-bottom-color: #c7d8c7; }
+.progress-track { background: #d7e3d4; box-shadow: inset 0 1px 2px #31524718; }
+.progress-track span { background: linear-gradient(90deg, #5c9d73, var(--apricot)); }
+.quote-strip { margin-bottom: 70px; padding: 27px 30px 27px 25px; border: 1px solid #d7e3d4; border-radius: 18px; background: #fffdf8cc; box-shadow: 0 14px 30px #3152470d; }
+.quote-mark { display: grid; place-items: center; width: 50px; height: 50px; border-radius: 50%; background: var(--butter); font-size: 52px; }
+.quote-strip p { color: var(--ink-soft); }
+.section-heading { padding: 14px 16px; border: 1px solid #d8e3d5; border-radius: 16px; background: #ffffff98; box-shadow: 0 10px 24px #31524709; }
+.step-number { background: #315d4d; }
+.selected-pill { box-shadow: inset 0 1px 0 #ffffffaa; }
+.state-card { border-radius: 16px; box-shadow: 0 12px 25px #31524716; }
+.state-card:after { border-color: #ffffff75; }
+.state-card:hover, .state-card.is-selected, .district-card:hover, .district-card.is-selected, .place-card:hover, .place-card.is-selected { box-shadow: 0 19px 34px #3152471c; }
+.state-card.is-selected { outline-width: 2px; }
+.district-card { border-radius: 13px; box-shadow: 0 10px 22px #31524710; }
+.place-card { border-radius: 16px; box-shadow: 0 10px 24px #3152470d; }
+.place-card:hover, .place-card.is-selected { border-color: #e6a07f; background: #fffefa; }
+.place-image { border-radius: 10px; }
+.explore-panel { border-radius: 24px; box-shadow: 0 28px 65px #18382f32; }
+.explore-panel .subplace-card { border-radius: 15px; }
+.explore-panel .subplace-card:hover { box-shadow: 0 16px 30px #061d1740; }
+.tab-row button { min-height: 42px; }
+.map-frame { border-radius: 16px !important; }
+.footer { color: #6f8979; }
+button:focus-visible, a:focus-visible { outline: 3px solid #f3a27f99; outline-offset: 3px; }
+
+html[data-theme="dark"] .app-shell { background: linear-gradient(180deg, #12231e 0%, #182d25 100%); }
+html[data-theme="dark"] .content-wrap:before { background: linear-gradient(180deg, #07120fe8 0%, #0c1914f2 50%, #07120ff5 100%), url("https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=2400&q=92") center / cover fixed; }
+html[data-theme="dark"] .quote-strip, html[data-theme="dark"] .section-heading { border-color: #345143; background: #15251ee8; }
+html[data-theme="dark"] .quote-strip p { color: #f0f5ed; }
+html[data-theme="dark"] .place-card:hover, html[data-theme="dark"] .place-card.is-selected { border-color: #d97951; background: #1b3027; }
+
+@media (max-width: 760px) {
+  .topbar { padding-top: 0; }
+  .brand-mark { width: 32px; height: 32px; }
+  .hero-content { padding-top: 138px; }
+  .hero-stats { gap: 18px; flex-wrap: wrap; }
+  .quote-strip { padding: 22px 17px; }
+  .quote-mark { width: 42px; height: 42px; font-size: 45px; }
+  .section-heading { flex-wrap: wrap; padding: 13px; }
+  .section-heading > div:nth-child(2) { flex: 1; min-width: 185px; }
+  .selected-pill { margin-left: 58px !important; }
+  .state-card { min-height: 164px; }
+  .place-card { padding: 13px; }
+  .explore-panel { border-radius: 18px; }
 }
