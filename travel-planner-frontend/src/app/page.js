@@ -233,6 +233,11 @@ function dayForTripItem(item, startDate) {
   return Math.max(1, Math.round(difference / 86400000) + 1);
 }
 
+function orderStops(stops, stopOrder = []) {
+  const order = new globalThis.Map(stopOrder.map((itemId, index) => [String(itemId), index]));
+  return [...stops].sort((first, second) => (order.get(String(first.item_id)) ?? Number.MAX_SAFE_INTEGER) - (order.get(String(second.item_id)) ?? Number.MAX_SAFE_INTEGER));
+}
+
 function haversineKm(first, second) {
   const earthRadiusKm = 6371;
   const latitudeDelta = (Number(second.lat) - Number(first.lat)) * Math.PI / 180;
@@ -400,7 +405,7 @@ export default function Home() {
           setActiveTrip(trips[0]);
           const savedMeta = JSON.parse(localStorage.getItem(`wanderwise-trip-${trips[0].trip_id || trips[0].id}`) || "null");
           const duration = savedMeta?.duration || Math.max(1, Math.round((new Date(trips[0].end_date) - new Date(trips[0].start_date)) / 86400000) + 1);
-          setTripMeta({ title: trips[0].title, startDate: normalizeTripDate(trips[0].start_date), duration, notes: savedMeta?.notes || "" });
+          setTripMeta({ title: trips[0].title, startDate: normalizeTripDate(trips[0].start_date), duration, notes: savedMeta?.notes || "", stopOrder: savedMeta?.stopOrder || [] });
           if (trips[0].itinerary_items) {
              const itemIds = new Set(trips[0].itinerary_items.map(i => i.sub_place_id));
              setAddedItems(itemIds);
@@ -414,7 +419,7 @@ export default function Home() {
           });
           setTrips([newTrip]);
           setActiveTrip(newTrip);
-          setTripMeta({ title: newTrip.title, startDate: normalizeTripDate(newTrip.start_date), duration: 15, notes: "" });
+          setTripMeta({ title: newTrip.title, startDate: normalizeTripDate(newTrip.start_date), duration: 15, notes: "", stopOrder: [] });
         }
       } catch (error) {
         console.error("Error setting up itinerary:", error);
@@ -444,7 +449,7 @@ export default function Home() {
     setAddedItems(new Set((trip.itinerary_items || []).map(item => item.sub_place_id)));
     const savedMeta = JSON.parse(localStorage.getItem(`wanderwise-trip-${trip.trip_id || trip.id}`) || "null");
     const duration = savedMeta?.duration || Math.max(1, Math.round((new Date(trip.end_date) - new Date(trip.start_date)) / 86400000) + 1);
-    setTripMeta({ title: trip.title, startDate: normalizeTripDate(trip.start_date), duration, notes: savedMeta?.notes || "" });
+    setTripMeta({ title: trip.title, startDate: normalizeTripDate(trip.start_date), duration, notes: savedMeta?.notes || "", stopOrder: savedMeta?.stopOrder || [] });
     setSelectedDay(1);
   };
 
@@ -458,7 +463,7 @@ export default function Home() {
       setTrips(prev => [data, ...prev]);
       setActiveTrip(data);
       setAddedItems(new Set());
-      persistTripMeta({ title, startDate: newTrip.startDate, duration: Number(newTrip.duration), notes: "" }, data);
+      persistTripMeta({ title, startDate: newTrip.startDate, duration: Number(newTrip.duration), notes: "", stopOrder: [] }, data);
       setIsCreatingTrip(false);
       setShowNewTrip(false);
       setNewTrip({ title: "", startDate: newTrip.startDate, duration: 5 });
@@ -483,7 +488,7 @@ export default function Home() {
         else {
           setActiveTrip(null);
           setAddedItems(new Set());
-          setTripMeta({ title: "", startDate: FALLBACK_TRIP_DATE, duration: 1, notes: "" });
+          setTripMeta({ title: "", startDate: FALLBACK_TRIP_DATE, duration: 1, notes: "", stopOrder: [] });
         }
       }
     } catch (error) {
@@ -562,7 +567,6 @@ export default function Home() {
     if (addedItems.has(subPlace.id)) return; 
 
     const currentTripId = activeTrip.trip_id || activeTrip.id;
-
     try {
       const { data: createdItem } = await axios.post(`${API_URL}/trips/${currentTripId}/items`, {
         sub_place_id: subPlace.id,
@@ -610,6 +614,22 @@ export default function Home() {
       console.error("Error moving trip item:", error);
       alert("Could not move this stop. Please try again.");
     }
+  };
+
+  const handleSwapTripItem = (item, direction) => {
+    const dayStops = orderStops(activeDayStops, tripMeta.stopOrder);
+    const currentIndex = dayStops.findIndex(stop => stop.item_id === item.item_id);
+    const targetIndex = currentIndex + direction;
+    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= dayStops.length) return;
+
+    const reorderedDayStops = [...dayStops];
+    [reorderedDayStops[currentIndex], reorderedDayStops[targetIndex]] = [reorderedDayStops[targetIndex], reorderedDayStops[currentIndex]];
+    const dayStopIds = new Set(dayStops.map(stop => String(stop.item_id)));
+    const nextOrder = [
+      ...(tripMeta.stopOrder || []).filter(itemId => !dayStopIds.has(String(itemId))),
+      ...reorderedDayStops.map(stop => stop.item_id)
+    ];
+    persistTripMeta({ ...tripMeta, stopOrder: nextOrder });
   };
 
   const handleRemoveTripItem = async (item) => {
@@ -693,7 +713,7 @@ export default function Home() {
   const step = selectedPlace ? 4 : selectedDistrict ? 3 : selectedState ? 2 : 1;
   const scrollToJourney = () => document.getElementById("journey")?.scrollIntoView({ behavior: "smooth" });
   const activeTripDays = tripDays(tripMeta.startDate, tripMeta.duration);
-  const activeDayStops = activeTrip?.itinerary_items?.filter(stop => dayForTripItem(stop, tripMeta.startDate) === selectedDay) || [];
+  const activeDayStops = orderStops(activeTrip?.itinerary_items?.filter(stop => dayForTripItem(stop, tripMeta.startDate) === selectedDay) || [], tripMeta.stopOrder);
 
   return (
     <main className="app-shell">
@@ -1019,7 +1039,7 @@ export default function Home() {
                 </div>
                 <div className="day-plan-head"><div><p className="eyebrow">{dateLabel(activeTripDays[selectedDay - 1]?.date || tripMeta.startDate)}</p><h3>Day {selectedDay} itinerary</h3></div><span>{activeDayStops.length} planned stop{activeDayStops.length === 1 ? "" : "s"}</span></div>
                 {activeDayStops.length === 0 ? <div className="day-empty"><span>✦</span><strong>A blank page for a good day.</strong><p>Save places from the discovery area, then assign them to this day.</p></div> : (
-                  <div className="day-stop-list">{activeDayStops.map((stop, index) => <div key={stop.item_id || `${stop.name}-${index}`} className="day-stop"><span className="day-stop-number">{String(index + 1).padStart(2, "0")}</span><div className="day-stop-copy"><strong>{stop.name}</strong><span>{stop.category?.replaceAll("_", " ") || "Local stop"} {stop.distance_km ? `· ${stop.distance_km} km` : ""}</span></div><div className="day-stop-actions"><span className="day-stop-time">{index === 0 ? "Morning" : index === 1 ? "Afternoon" : "Evening"}</span><label className="move-day"><span>Move to</span><select aria-label={`Move ${stop.name} to another day`} value={dayForTripItem(stop, tripMeta.startDate)} onChange={event => handleMoveTripItem(stop, event.target.value)}>{activeTripDays.map(({ day }) => <option key={day} value={day}>Day {day}</option>)}</select></label><button type="button" className="delete-stop" title={`Remove ${stop.name}`} aria-label={`Remove ${stop.name} from trip`} onClick={() => handleRemoveTripItem(stop)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M9 7V4h6v3m-9 0 1 13h8l1-13" /></svg></button></div></div>)}</div>
+                  <div className="day-stop-list">{activeDayStops.map((stop, index) => <div key={stop.item_id || `${stop.name}-${index}`} className="day-stop"><span className="day-stop-number">{String(index + 1).padStart(2, "0")}</span><div className="day-stop-copy"><strong>{stop.name}</strong><span>{stop.category?.replaceAll("_", " ") || "Local stop"} {stop.distance_km ? `· ${stop.distance_km} km` : ""}</span></div><div className="day-stop-actions"><span className="day-stop-time">{index === 0 ? "Morning" : index === 1 ? "Afternoon" : "Evening"}</span><div className="stop-reorder" aria-label={`Reorder ${stop.name}`}><button type="button" onClick={() => handleSwapTripItem(stop, -1)} disabled={index === 0} title="Move stop up" aria-label={`Move ${stop.name} up`}>↑</button><button type="button" onClick={() => handleSwapTripItem(stop, 1)} disabled={index === activeDayStops.length - 1} title="Move stop down" aria-label={`Move ${stop.name} down`}>↓</button></div><label className="move-day"><span>Move to</span><select aria-label={`Move ${stop.name} to another day`} value={dayForTripItem(stop, tripMeta.startDate)} onChange={event => handleMoveTripItem(stop, event.target.value)}>{activeTripDays.map(({ day }) => <option key={day} value={day}>Day {day}</option>)}</select></label><button type="button" className="delete-stop" title={`Remove ${stop.name}`} aria-label={`Remove ${stop.name} from trip`} onClick={() => handleRemoveTripItem(stop)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M9 7V4h6v3m-9 0 1 13h8l1-13" /></svg></button></div></div>)}</div>
                 )}
               </section>
             </div>
