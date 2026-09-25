@@ -1,75 +1,121 @@
-<svg width="920" height="260" viewBox="0 0 920 260" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <title>trawell travel app logo</title>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="512"
+  height="256"
+  viewBox="0 0 512 256"
+>
+  <rect width="512" height="256" fill="#ffffff"/>
 
-  <!-- Background -->
-  <rect width="920" height="260" rx="36" fill="#F8FBFA"/>
+  <!-- Logo icon -->
+  <g transform="translate(27 96)">
+    <!-- Circular mountain badge -->
+    <clipPath id="mountainClip">
+      <circle cx="55" cy="55" r="55"/>
+    </clipPath>
 
-  <!-- App icon -->
-  <g transform="translate(38 30)">
-    <!-- Rounded square -->
-    <rect width="200" height="200" rx="52" fill="#123F46"/>
+    <g clip-path="url(#mountainClip)">
+      <!-- Sky -->
+      <rect x="0" y="0" width="110" height="110" fill="#ffffff"/>
 
-    <!-- Sun -->
-    <circle cx="142" cy="58" r="24" fill="#F48B73"/>
+      <!-- Coral sunset -->
+      <path
+        d="M0 55C0 24.6 24.6 0 55 0C76 0 94.2 11.7 104.2 29.2
+        C88.9 26.4 76.6 30.4 67.3 40.3
+        C57.2 29.1 45.9 22.5 34.4 22.5
+        C19.2 22.5 8.5 34.1 8.5 48.6
+        L8.5 64Z"
+        fill="#F47763"
+      />
 
-    <!-- Back mountain -->
-    <path
-      d="M25 151L91 72L119 106L137 84L184 151H25Z"
-      fill="#80C6C2"
+      <!-- Sun -->
+      <circle cx="34" cy="34" r="11" fill="#ffffff"/>
+
+      <!-- Blue mountain behind -->
+      <path
+        d="M54 73L78 43L88 55L99 35L122 73Z"
+        fill="#61A9C5"
+      />
+
+      <!-- Snow mountain peaks -->
+      <path
+        d="M-8 70L17 43L29 55L40 39L54 53L67 31L99 70Z"
+        fill="#ffffff"
+      />
+
+      <!-- Main dark mountain range -->
+      <path
+        d="M-12 75L19 49L36 66L49 52L78 75L91 54L119 82L119 115L-12 115Z"
+        fill="#07515C"
+      />
+
+      <!-- Snowcaps -->
+      <path
+        d="M19 49L36 66L28 62L22 68L13 60Z"
+        fill="#ffffff"
+      />
+      <path
+        d="M49 52L78 75L65 67L57 70L43 60Z"
+        fill="#ffffff"
+      />
+      <path
+        d="M91 54L119 82L103 71L96 74L83 64Z"
+        fill="#ffffff"
+      />
+
+      <!-- Foreground valley -->
+      <path
+        d="M-10 88C14 76 27 78 43 88C55 96 62 101 77 100
+        C87 99 95 94 106 87L117 115H-10Z"
+        fill="#064D59"
+      />
+
+      <!-- Winding travel road -->
+      <path
+        d="M73 111C70 101 57 95 48 91
+        C41 88 38 84 44 80
+        C53 74 72 73 83 69
+        C91 66 94 60 90 56"
+        fill="none"
+        stroke="#ffffff"
+        stroke-width="8"
+        stroke-linecap="round"
+      />
+
+      <!-- Green tree -->
+      <path
+        d="M88 75L94 75L91 68L96 68L91 60L86 68L81 68L86 75L82 75L88 82Z"
+        fill="#86B83F"
+      />
+
+      <!-- Bottom road extension -->
+      <path
+        d="M73 111L57 128L49 137L61 148L77 132L87 121Z"
+        fill="#07515C"
+      />
+    </g>
+
+    <!-- Badge outline -->
+    <circle
+      cx="55"
+      cy="55"
+      r="55"
+      fill="none"
+      stroke="#ffffff"
+      stroke-width="2"
     />
-
-    <!-- Front mountain -->
-    <path
-      d="M19 169L78 103L111 137L132 113L184 169H19Z"
-      fill="#F8FBFA"
-    />
-
-    <!-- Mountain shadow -->
-    <path
-      d="M78 103L111 137L96 126L78 145L67 132L78 103Z"
-      fill="#D8ECE9"
-    />
-
-    <!-- Travel route -->
-    <path
-      d="M40 166C68 151 89 157 104 169C119 181 139 181 163 161"
-      stroke="#F48B73"
-      stroke-width="7"
-      stroke-linecap="round"
-      stroke-dasharray="1 18"
-    />
-
-    <!-- Location pin -->
-    <path
-      d="M164 143C164 143 151 128 151 116C151 106.059 159.059 98 169 98C178.941 98 187 106.059 187 116C187 128 174 143 169 149L164 143Z"
-      fill="#F48B73"
-    />
-    <circle cx="169" cy="116" r="7" fill="#123F46"/>
   </g>
 
   <!-- Wordmark -->
   <text
-    x="280"
-    y="158"
-    fill="#123F46"
-    font-family="Avenir Next, Montserrat, Poppins, Arial, sans-serif"
-    font-size="92"
-    font-weight="700"
-    letter-spacing="-3"
-  >
-    trawell
-  </text>
-
-  <!-- Small tagline -->
-  <text
-    x="286"
-    y="194"
-    fill="#5F8180"
-    font-family="Avenir Next, Montserrat, Poppins, Arial, sans-serif"
-    font-size="20"
+    x="160"
+    y="174"
+    font-family="Arial Rounded MT Bold, Nunito, Quicksand, Arial, sans-serif"
+    font-size="75"
     font-weight="500"
-    letter-spacing="4"
+    letter-spacing="-4"
   >
-    PLAN. EXPLORE. THRIVE.
+    <tspan fill="#07515C">tra</tspan>
+    <tspan fill="#F47763">w</tspan>
+    <tspan fill="#61A9C5">ell</tspan>
   </text>
 </svg>
