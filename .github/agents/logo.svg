@@ -1,10 +1,7 @@
-
-
-
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200" width="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200" width="600" height="200">
   <defs>
     <!-- Gradient for the Mountain/Path -->
-    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#3b82f6" />
       <stop offset="100%" stop-color="#0284c7" />
     </linearGradient>
@@ -13,19 +10,16 @@
   <!-- Sleek Dark Background -->
   <rect width="600" height="200" fill="#0f172a" rx="16"/>
   
-  <!-- Logo Mark (Mountain & Path merging into a 'W') -->
-  <g transform="translate(45, 55)">
-    <path d="M10,80 L40,20 L70,80 L100,35 L120,80" fill="none" stroke="url(#blueGrad)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-    <!-- Sun / Destination point -->
-    <circle cx="85" cy="18" r="8" fill="#f59e0b" />
-  </g>
+  <!-- Mountain & Path Icon -->
+  <path d="M 55 135 L 85 75 L 115 135 L 145 90 L 165 135" fill="none" stroke="url(#logoGradient)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Sun / Destination point -->
+  <circle cx="130" cy="73" r="10" fill="#f59e0b" />
   
   <!-- Logotype -->
-  <text x="190" y="115" font-family="system-ui, -apple-system, sans-serif" font-size="64" font-weight="900" fill="#ffffff" letter-spacing="2">TRA</text>
-  <text x="325" y="115" font-family="system-ui, -apple-system, sans-serif" font-size="64" font-weight="900" fill="#3b82f6" letter-spacing="2">WELL</text>
+  <text x="210" y="115" font-family="Arial, sans-serif" font-size="64" font-weight="bold" fill="#ffffff" letter-spacing="2">TRA</text>
+  <text x="345" y="115" font-family="Arial, sans-serif" font-size="64" font-weight="bold" fill="#3b82f6" letter-spacing="2">WELL</text>
   
   <!-- Tagline -->
-  <text x="195" y="150" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="600" fill="#94a3b8" letter-spacing="6">TRAVEL DEEP. TRAVEL WELL.</text>
+  <text x="215" y="150" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#94a3b8" letter-spacing="4">TRAVEL DEEP. TRAVEL WELL.</text>
 </svg>
-
-```
