@@ -1,25 +1,75 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200" width="600" height="200">
-  <defs>
-    <!-- Gradient for the Mountain/Path -->
-    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#3b82f6" />
-      <stop offset="100%" stop-color="#0284c7" />
-    </linearGradient>
-  </defs>
-  
-  <!-- Sleek Dark Background -->
-  <rect width="600" height="200" fill="#0f172a" rx="16"/>
-  
-  <!-- Mountain & Path Icon -->
-  <path d="M 55 135 L 85 75 L 115 135 L 145 90 L 165 135" fill="none" stroke="url(#logoGradient)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-  
-  <!-- Sun / Destination point -->
-  <circle cx="130" cy="73" r="10" fill="#f59e0b" />
-  
-  <!-- Logotype -->
-  <text x="210" y="115" font-family="Arial, sans-serif" font-size="64" font-weight="bold" fill="#ffffff" letter-spacing="2">TRA</text>
-  <text x="345" y="115" font-family="Arial, sans-serif" font-size="64" font-weight="bold" fill="#3b82f6" letter-spacing="2">WELL</text>
-  
-  <!-- Tagline -->
-  <text x="215" y="150" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#94a3b8" letter-spacing="4">TRAVEL DEEP. TRAVEL WELL.</text>
+<svg width="920" height="260" viewBox="0 0 920 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>trawell travel app logo</title>
+
+  <!-- Background -->
+  <rect width="920" height="260" rx="36" fill="#F8FBFA"/>
+
+  <!-- App icon -->
+  <g transform="translate(38 30)">
+    <!-- Rounded square -->
+    <rect width="200" height="200" rx="52" fill="#123F46"/>
+
+    <!-- Sun -->
+    <circle cx="142" cy="58" r="24" fill="#F48B73"/>
+
+    <!-- Back mountain -->
+    <path
+      d="M25 151L91 72L119 106L137 84L184 151H25Z"
+      fill="#80C6C2"
+    />
+
+    <!-- Front mountain -->
+    <path
+      d="M19 169L78 103L111 137L132 113L184 169H19Z"
+      fill="#F8FBFA"
+    />
+
+    <!-- Mountain shadow -->
+    <path
+      d="M78 103L111 137L96 126L78 145L67 132L78 103Z"
+      fill="#D8ECE9"
+    />
+
+    <!-- Travel route -->
+    <path
+      d="M40 166C68 151 89 157 104 169C119 181 139 181 163 161"
+      stroke="#F48B73"
+      stroke-width="7"
+      stroke-linecap="round"
+      stroke-dasharray="1 18"
+    />
+
+    <!-- Location pin -->
+    <path
+      d="M164 143C164 143 151 128 151 116C151 106.059 159.059 98 169 98C178.941 98 187 106.059 187 116C187 128 174 143 169 149L164 143Z"
+      fill="#F48B73"
+    />
+    <circle cx="169" cy="116" r="7" fill="#123F46"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text
+    x="280"
+    y="158"
+    fill="#123F46"
+    font-family="Avenir Next, Montserrat, Poppins, Arial, sans-serif"
+    font-size="92"
+    font-weight="700"
+    letter-spacing="-3"
+  >
+    trawell
+  </text>
+
+  <!-- Small tagline -->
+  <text
+    x="286"
+    y="194"
+    fill="#5F8180"
+    font-family="Avenir Next, Montserrat, Poppins, Arial, sans-serif"
+    font-size="20"
+    font-weight="500"
+    letter-spacing="4"
+  >
+    PLAN. EXPLORE. THRIVE.
+  </text>
 </svg>
