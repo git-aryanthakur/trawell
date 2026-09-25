@@ -1,0 +1,31 @@
+Copy and paste this exact code into your `logo.svg` file and save it:
+
+```xml
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200" width="100%">
+  <defs>
+    <!-- Gradient for the Mountain/Path -->
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Sleek Dark Background -->
+  <rect width="600" height="200" fill="#0f172a" rx="16"/>
+  
+  <!-- Logo Mark (Mountain & Path merging into a 'W') -->
+  <g transform="translate(45, 55)">
+    <path d="M10,80 L40,20 L70,80 L100,35 L120,80" fill="none" stroke="url(#blueGrad)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Sun / Destination point -->
+    <circle cx="85" cy="18" r="8" fill="#f59e0b" />
+  </g>
+  
+  <!-- Logotype -->
+  <text x="190" y="115" font-family="system-ui, -apple-system, sans-serif" font-size="64" font-weight="900" fill="#ffffff" letter-spacing="2">TRA</text>
+  <text x="325" y="115" font-family="system-ui, -apple-system, sans-serif" font-size="64" font-weight="900" fill="#3b82f6" letter-spacing="2">WELL</text>
+  
+  <!-- Tagline -->
+  <text x="195" y="150" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="600" fill="#94a3b8" letter-spacing="6">TRAVEL DEEP. TRAVEL WELL.</text>
+</svg>
+
+```
